@@ -68,14 +68,14 @@ public class TopicalBackend {
 		AttendeeInfo attendee = AttendeeInfo.getAttendeeInfoFromString(adres);
 		List<AttendeeInfo> attendees = Arrays.asList(attendee);
 
-		Calendar vandaag = Calendar.getInstance();
-		vandaag.set(Calendar.HOUR, 0);
-		vandaag.set(Calendar.MINUTE, 0);
-		Calendar morgen = (Calendar) vandaag.clone();
-		morgen.add(Calendar.DATE, 7);
+		Calendar today = Calendar.getInstance();
+		today.set(Calendar.HOUR, 0);
+		today.set(Calendar.MINUTE, 0);
+		Calendar nextWeek = (Calendar) today.clone();
+		nextWeek.add(Calendar.DATE, 7);
 
-		TimeWindow timeWindow = new TimeWindow(vandaag.getTime(),
-				morgen.getTime());
+		TimeWindow timeWindow = new TimeWindow(today.getTime(),
+				nextWeek.getTime());
 		try {
 			ExchangeService service = createService();
 			GetUserAvailabilityResults userAvailability = service
@@ -83,7 +83,6 @@ public class TopicalBackend {
 							AvailabilityData.FreeBusy);
 			ServiceResponseCollection<AttendeeAvailability> attendeesAvailability = userAvailability
 					.getAttendeesAvailability();
-			attendeesAvailability.getCount();
 			AttendeeAvailability availability = attendeesAvailability
 					.iterator().next();
 
@@ -154,10 +153,10 @@ public class TopicalBackend {
 
 	private SimpleEvent getNextEvent(List<SimpleEvent> events) {
 		Date nu = Calendar.getInstance().getTime();
-		List<SimpleEvent> currentEvents = events.stream()
+		List<SimpleEvent> upcomingEvents = events.stream()
 				.filter(e -> e.getStartTime().after(nu))
 				.collect(Collectors.toList());
-		return currentEvents.size() > 0 ? currentEvents.get(0) : null;
+		return upcomingEvents.size() > 0 ? upcomingEvents.get(0) : null;
 	}
 
 	private ExchangeService createService() {
