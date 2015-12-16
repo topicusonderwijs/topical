@@ -28,11 +28,12 @@ import com.google.gson.Gson;
 
 public class TopicalBackend {
 
-	private static final String domain = "";
-	private static final String username = "";
-	private static final String password = "";
-	private static final String url = "";
-	public static String[] rooms = new String[] { };
+	private static final String domain = "YOUR-EXCHANGE-DOMAIN";
+	private static final String username = "YOUR-USERNAME";
+	private static final String password = "YOUR-PASSWORD";
+	private static final String url = "https://YOUR-EXCHANGE-URL/EWS/Exchange.asmx";
+	private static String[] rooms = new String[] {
+			"MEETING-ROOM-1-EMAIL-ADDRESS", "MEETING-ROOM-2-EMAIL-ADDRESS" };
 
 	public static void main(String[] args) {
 		new TopicalBackend();
