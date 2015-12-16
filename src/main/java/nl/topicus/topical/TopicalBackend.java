@@ -28,18 +28,29 @@ import com.google.gson.Gson;
 
 public class TopicalBackend {
 
-	private static final String domain = "YOUR-EXCHANGE-DOMAIN";
-	private static final String username = "YOUR-USERNAME";
-	private static final String password = "YOUR-PASSWORD";
-	private static final String url = "https://YOUR-EXCHANGE-URL/EWS/Exchange.asmx";
-	private static String[] rooms = new String[] {
-			"MEETING-ROOM-1-EMAIL-ADDRESS", "MEETING-ROOM-2-EMAIL-ADDRESS" };
+	private String domain;
+	private String username;
+	private String password;
+	private String url;
+	public List<String> rooms;
 
 	public static void main(String[] args) {
-		new TopicalBackend();
+		if (args.length < 5) {
+			System.out
+					.println("Usage: [domain] [username] [password] [url] [room1] [room2]");
+		}
+		List<String> argsList = Arrays.asList(args);
+		new TopicalBackend(argsList.get(0), argsList.get(1), argsList.get(2),
+				argsList.get(3), argsList.subList(4, argsList.size() - 1));
 	}
 
-	public TopicalBackend() {
+	public TopicalBackend(String domain, String username, String password,
+			String url, List<String> rooms) {
+		this.domain = domain;
+		this.username = username;
+		this.password = password;
+		this.url = url;
+		this.rooms = rooms;
 
 		Gson gson = new Gson();
 
