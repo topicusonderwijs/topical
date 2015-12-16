@@ -12,4 +12,5 @@ An API on top of an Exchange server (version 2010_SP2) that:
 
 ## Usage / config
 Configuration is done by passing the following arguments to the program:
+
 `[domain] [username] [password] [url] [room1] [room2] [roomX]`
