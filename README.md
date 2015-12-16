@@ -1,5 +1,5 @@
 # topical-backend
-An API on top of and Exchange server that:
+An API on top of an Exchange server (version 2010_SP2) that:
 * lists the configured meeting rooms 
 * lists the apppointments for a meeting room 
 * lets you add a new appointment to a meeting room
