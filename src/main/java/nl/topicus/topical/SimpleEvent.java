@@ -1,34 +1,36 @@
 package nl.topicus.topical;
 
+import java.time.Instant;
 import java.util.Date;
 
 public class SimpleEvent {
 	
-	private Date startTime;
+	private Instant startTime;
 
-	private Date endTime;
+	private Instant endTime;
 
 	private String subject;
 
 	public SimpleEvent(Date startTime, Date endTime, String subject) {
-		this.setStartTime(startTime);
-		this.setEndTime(endTime);
+		this.setStartTime(startTime.toInstant());
+		this.setEndTime(endTime.toInstant());
 		this.setSubject(subject);
+		
 	}
 
-	public Date getStartTime() {
+	public Instant getStartTime() {
 		return startTime;
 	}
 
-	public void setStartTime(Date startTime) {
+	public void setStartTime(Instant startTime) {
 		this.startTime = startTime;
 	}
 
-	public Date getEndTime() {
+	public Instant getEndTime() {
 		return endTime;
 	}
 
-	public void setEndTime(Date endTime) {
+	public void setEndTime(Instant endTime) {
 		this.endTime = endTime;
 	}
 

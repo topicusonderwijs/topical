@@ -1,7 +1,11 @@
 package nl.topicus.topical;
 
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -25,6 +29,11 @@ import microsoft.exchange.webservices.data.property.complex.MessageBody;
 import spark.Spark;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 public class TopicalBackend {
 
@@ -52,7 +61,15 @@ public class TopicalBackend {
 		this.url = url;
 		this.rooms = rooms;
 
-		Gson gson = new Gson();
+		Gson gson = new GsonBuilder().registerTypeAdapter(Instant.class,
+				new JsonSerializer<Instant>() {
+
+					@Override
+					public JsonElement serialize(Instant instant, Type type,
+							JsonSerializationContext jsonSerializationContext) {
+						return new JsonPrimitive(instant.toString());
+					}
+				}).create();
 
 		Spark.get("/rooms", (req, res) -> {
 			res.type("application/json");
@@ -73,6 +90,10 @@ public class TopicalBackend {
 				return e.getMessage();
 			}
 		});
+		Spark.after((request, response) -> {
+			response.header("Access-Control-Allow-Origin", "*");
+			response.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+		});
 	}
 
 	private List<SimpleEvent> listEventsNextSevenDays(String adres) {
@@ -82,11 +103,11 @@ public class TopicalBackend {
 		Calendar today = Calendar.getInstance();
 		today.set(Calendar.HOUR, 0);
 		today.set(Calendar.MINUTE, 0);
-		Calendar nextWeek = (Calendar) today.clone();
-		nextWeek.add(Calendar.DATE, 7);
+		Calendar tomorrow = (Calendar) today.clone();
+		tomorrow.add(Calendar.DATE, 1);
 
 		TimeWindow timeWindow = new TimeWindow(today.getTime(),
-				nextWeek.getTime());
+				tomorrow.getTime());
 		try {
 			ExchangeService service = createService();
 			GetUserAvailabilityResults userAvailability = service
@@ -134,18 +155,20 @@ public class TopicalBackend {
 		appointment
 				.setBody(MessageBody
 						.getMessageBodyFromText("Deze afspraak is ingeschoten vanuit Topical"));
+		
+		Instant nu = Instant.now();
+		appointment.setStart(Date.from(nu.atZone(ZoneId.systemDefault())
+				.toInstant()));
 
-		Calendar nu = Calendar.getInstance();
-		appointment.setStart(nu.getTime());
-
-		Calendar inOneHour = (Calendar) nu.clone();
-		inOneHour.add(Calendar.HOUR, 1);
+		Instant inOneHour = nu.plus(Duration.ofHours(1));
 
 		SimpleEvent nextEvent = getNextEvent(events);
-		if (nextEvent.getStartTime().before(inOneHour.getTime())) {
-			appointment.setEnd(nextEvent.getStartTime());
+		if (nextEvent.getStartTime().isBefore(inOneHour)) {
+			appointment.setEnd(Date.from(nextEvent.getStartTime()
+					.atZone(ZoneId.systemDefault()).toInstant()));
 		} else {
-			appointment.setEnd(inOneHour.getTime());
+			appointment.setEnd(Date.from(inOneHour.atZone(
+					ZoneId.systemDefault()).toInstant()));
 		}
 
 		appointment.getRequiredAttendees().add(adres);
@@ -153,19 +176,19 @@ public class TopicalBackend {
 	}
 
 	private SimpleEvent getCurrentEvent(List<SimpleEvent> events) {
-		Date nu = Calendar.getInstance().getTime();
+		Instant nu = Instant.now();
 		List<SimpleEvent> currentEvents = events
 				.stream()
-				.filter(e -> e.getStartTime().before(nu)
-						&& e.getEndTime().after(nu))
+				.filter(e -> e.getStartTime().isBefore(nu)
+						&& e.getEndTime().isAfter(nu))
 				.collect(Collectors.toList());
 		return currentEvents.size() > 0 ? currentEvents.get(0) : null;
 	}
 
 	private SimpleEvent getNextEvent(List<SimpleEvent> events) {
-		Date nu = Calendar.getInstance().getTime();
+		Instant nu = Instant.now();
 		List<SimpleEvent> upcomingEvents = events.stream()
-				.filter(e -> e.getStartTime().after(nu))
+				.filter(e -> e.getStartTime().isAfter(nu))
 				.collect(Collectors.toList());
 		return upcomingEvents.size() > 0 ? upcomingEvents.get(0) : null;
 	}
