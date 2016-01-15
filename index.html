@@ -5,25 +5,25 @@
     var isClaimable = false;
     function refreshEvents(){
       fetch('http://localhost:4567/events/'+roomaddress).then(function(response){
-          return response.json().then(function(rooms){
+          return response.json().then(function(events){
 
-            var roomsDiv = document.querySelector('#events');
+            var eventsDiv = document.querySelector('#events');
             // clear all events
-            while (roomsDiv.hasChildNodes()) {
-              roomsDiv.removeChild(roomsDiv.lastChild);
+            while (eventsDiv.hasChildNodes()) {
+              eventsDiv.removeChild(roomsDiv.lastChild);
             }
 
             isClaimable = true;
 
             // add new events
             var template = document.querySelector('#eventtemplate');
-            rooms.forEach(function(room){
+            events.forEach(function(event){
 
               // the subject of the event
-              template.content.querySelector('.subject').innerHTML = room.subject;
+              template.content.querySelector('.subject').innerHTML = event.subject;
 
-              var start = new Date(room.startTime);
-              var end = new Date(room.endTime);
+              var start = new Date(event.startTime);
+              var end = new Date(event.endTime);
 
               // the timestamp of the event
               template.content.querySelector('.startHours').innerHTML = start.getHours();
@@ -33,7 +33,7 @@
 
               // the height of the event
               var durationMinutes = (end-start)/60000;
-              template.content.querySelector('.event').style.height = 'calc('+(durationMinutes/6)+'% - 5px)';
+              template.content.querySelector('.event').style.height = 'calc('+(durationMinutes/6)+'% - 2px)';
 
               // the top-position of the event
               var minutesSince8 = ((start.getHours()-8) * 60) + start.getMinutes();
@@ -50,7 +50,7 @@
 
               var clone = document.importNode(template.content, true);
 
-              roomsDiv.appendChild(clone);
+              eventsDiv.appendChild(clone);
             });
 
             refreshTime();

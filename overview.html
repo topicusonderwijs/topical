@@ -1,0 +1,192 @@
+<html>
+<head>
+  <script>
+    function refreshEvents(address){
+      fetch('http://firefly:4567/events/'+address).then(function(response){
+          return response.json().then(function(events){
+            var currentEvent;
+            var upcomingEvent;
+            events.forEach(function(event){
+              var start = new Date(event.startTime);
+              var end = new Date(event.endTime);
+              var now = new Date();
+              if(now>start && now<end){
+                currentEvent = event;
+              }else{
+
+                if(now<start && upcomingEvent === undefined){
+                  upcomingEvent=event;
+                }
+              }
+            });
+
+            var roomElement = document.querySelector('.room[data-address="'+address+'"]');
+
+            var roomTextElement = roomElement.querySelector('.text');
+
+            var roomNumber = address.replace('VKS90.','').replace('@topicus.nl','');
+            var roomSvgElement = document.getElementById(roomNumber);
+            if(currentEvent){
+              roomElement.style.backgroundColor='lightpink';
+              roomSvgElement.style.fill='lightpink';
+              roomTextElement.innerHTML=roomNumber+' is bezet door '+currentEvent.subject;
+            }else{
+              roomElement.style.backgroundColor='lightgreen';
+              roomSvgElement.style.fill='lightgreen';
+              if(upcomingEvent){
+                var startTime = new Date(upcomingEvent.startTime);
+                roomTextElement.innerHTML=roomNumber+' is vrij tot '+startTime.getHours()+':'+(startTime.getMinutes()<10?'0':'') + startTime.getMinutes();
+              }else{
+                roomTextElement.innerHTML=roomNumber+' is vrij tot het eind van de dag';
+              }
+            }
+        });
+      });
+    };
+
+    function refreshRooms(){
+      var rooms = document.querySelectorAll('polygon');
+      for (i = 0; i < rooms.length; ++i) {
+        var address = 'VKS90.'+rooms[i].id+'@topicus.nl';
+        refreshEvents(address);
+      }
+    }
+
+    window.onload = function(){
+      refreshRooms();
+    }
+
+    setInterval(refreshRooms, 60000);
+  </script>
+
+  <style>
+    body{
+      margin: 0;
+      font-size: 16px;
+      font-family: "RobotoDraft",Helvetica,Arial,sans-serif;
+      font-weight: 300;
+
+    }
+    .rooms{
+      width:600px;
+      height:600px;
+      /*-webkit-transform: rotate(180deg);
+      transform: rotate(180deg);*/
+      position:relative;
+
+    }
+    .room{
+      position:absolute;
+      height:200px;
+      width:200px;
+    }
+    .room[data-address="VKS90.1@topicus.nl"]{
+      left:600px;
+      top:400px;
+      -webkit-clip-path: polygon(6% 40%, 87% 15%, 97% 84%, 15% 90%);
+      clip-path: polygon(6% 40%, 87% 15%, 97% 84%, 15% 90%);
+    }
+
+    .room[data-address="VKS90.2@topicus.nl"]{
+      top:300px;
+      left:570px;
+      -webkit-clip-path: polygon(4% 53%, 68% 6%, 100% 63%, 21% 89%);
+      clip-path: polygon(4% 53%, 68% 6%, 100% 63%, 21% 89%);
+    }
+
+    .room[data-address="VKS90.3@topicus.nl"]{
+      top:225px;
+      left:508px;
+      -webkit-clip-path: polygon(6% 71%, 32% 0%, 97% 40%, 34% 90%);
+      clip-path: polygon(6% 71%, 32% 0%, 97% 40%, 34% 90%);
+    }
+
+    .room[data-address="VKS90.4@topicus.nl"]{
+      top:280px;
+      left:230px;
+      height:340px;
+      width:340px;
+      -webkit-clip-path: polygon(50% 5%, 100% 40%, 70% 70%, 50% 66%, 30% 70%, 0 40%);
+      clip-path: polygon(50% 5%, 100% 40%, 70% 70%, 50% 66%, 30% 70%, 0 40%);
+    }
+
+    .room[data-address="VKS90.5@topicus.nl"]{
+      top:225px;
+      left:92px;
+      -webkit-clip-path: polygon(68% 0, 94% 71%, 66% 90%, 3% 40%);
+      clip-path: polygon(68% 0, 94% 71%, 66% 90%, 3% 40%);
+    }
+
+    .room[data-address="VKS90.6@topicus.nl"]{
+      top:300px;
+      left:30px;
+      -webkit-clip-path: polygon(32% 6%, 96% 53%, 79% 89%, 0 63%);
+      clip-path: polygon(32% 6%, 96% 53%, 79% 89%, 0 63%);
+    }
+
+    .room[data-address="VKS90.7@topicus.nl"]{
+      top:400px;
+      -webkit-clip-path: polygon(13% 15%, 94% 40%, 85% 90%, 3% 84%);
+      clip-path: polygon(13% 15%, 94% 40%, 85% 90%, 3% 84%);
+    }
+    .room[data-address="VKS90.8@topicus.nl"]{
+      top:400px;
+      left:150px;
+      height:250px;
+      width:220px;
+      -webkit-clip-path: polygon(33% 9%, 85% 51%, 78% 82%, 10% 82%);
+      clip-path: polygon(33% 9%, 85% 51%, 78% 82%, 10% 82%);
+    }
+
+    .room[data-address="VKS90.9@topicus.nl"]{
+      top:400px;
+      left:430px;
+      height:250px;
+      width:220px;
+      -webkit-clip-path: polygon(15% 51%, 67% 9%, 90% 82%, 22% 82%);
+      clip-path: polygon(15% 51%, 67% 9%, 90% 82%, 22% 82%);
+    }
+
+    .room[data-address="Trainingsruimte.Singel.9@topicus.nl"]{
+      top:620px;
+      left:175px;
+      width:450px;
+      height:100px;
+    }
+
+    .text{
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+
+    }
+  </style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" height="475" width="1000">
+  <polygon id="1" points="0,80 200,50 230,150 60,240" style="fill:lightgray;stroke:white;stroke-width:2" />
+  <polygon id="2" points="60,240 230,150 300,230 175,380" style="fill:lightgray;stroke:white;stroke-width:2" />
+  <polygon id="3" points="175,380 300,230 395,285 325,470" style="fill:lightgray;stroke:white;stroke-width:2" />
+
+  <polygon id="4" points="380,325 395,285 300,230 425,85 500,115 575,85 700,230 605,285 620,325 500,370" style="fill:lightgray;stroke:white;stroke-width:2" />
+
+  <polygon id="5" points="605,285 700,230 825,380 675,470" style="fill:lightgray;stroke:white;stroke-width:2" />
+  <polygon id="6" points="700,230 770,150 940,240 825,380" style="fill:lightgray;stroke:white;stroke-width:2" />
+  <polygon id="7" points="770,150 800,50 1000,80 940,240" style="fill:lightgray;stroke:white;stroke-width:2" />
+
+  <polygon id="8" points="165,55 155,0 355,0 365,60 407,107 300,230 230,150 200,50" style="fill:lightgray;stroke:white;stroke-width:2" />
+  <polygon id="9" points="835,55 845,0 645,0 635,60 593,107 700,230 770,150 800,50" style="fill:lightgray;stroke:white;stroke-width:2" />
+</svg>
+<div class="rooms">
+<div class="room" data-address="VKS90.1@topicus.nl"><div class="text"></div></div>
+<div class="room" data-address="VKS90.2@topicus.nl"><div class="text"></div></div>
+<div class="room" data-address="VKS90.3@topicus.nl"><div class="text"></div></div>
+<div class="room" data-address="VKS90.4@topicus.nl"><div class="text"></div></div>
+<div class="room" data-address="VKS90.5@topicus.nl"><div class="text"></div></div>
+<div class="room" data-address="VKS90.6@topicus.nl"><div class="text"></div></div>
+<div class="room" data-address="VKS90.7@topicus.nl"><div class="text"></div></div>
+<div class="room" data-address="VKS90.8@topicus.nl"><div class="text"></div></div>
+<div class="room" data-address="VKS90.9@topicus.nl"><div class="text"></div></div>
+<div class="room" data-address="Trainingsruimte.Singel.9@topicus.nl"><div class="text"></div></div></div>
+</body>
+</html>
