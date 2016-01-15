@@ -47,10 +47,11 @@ public class TopicalBackend {
 		if (args.length < 5) {
 			System.out
 					.println("Usage: [domain] [username] [password] [url] [room1] [room2]");
+		} else {
+			List<String> argsList = Arrays.asList(args);
+			new TopicalBackend(argsList.get(0), argsList.get(1), argsList.get(2),
+					argsList.get(3), argsList.subList(4, argsList.size()));
 		}
-		List<String> argsList = Arrays.asList(args);
-		new TopicalBackend(argsList.get(0), argsList.get(1), argsList.get(2),
-				argsList.get(3), argsList.subList(4, argsList.size() - 1));
 	}
 
 	public TopicalBackend(String domain, String username, String password,
