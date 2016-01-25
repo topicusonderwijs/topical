@@ -79,7 +79,7 @@ public class TopicalBackend {
 
 		Spark.get("/events/:room", (req, res) -> {
 			res.type("application/json");
-			return listEventsNextSevenDays(req.params(":room"));
+			return listEventsToday(req.params(":room"));
 		}, gson::toJson);
 
 		Spark.get("claim/:room", (req, res) -> {
@@ -97,7 +97,7 @@ public class TopicalBackend {
 		});
 	}
 
-	private List<SimpleEvent> listEventsNextSevenDays(String adres) {
+	private List<SimpleEvent> listEventsToday(String adres) {
 		AttendeeInfo attendee = AttendeeInfo.getAttendeeInfoFromString(adres);
 		List<AttendeeInfo> attendees = Arrays.asList(attendee);
 
@@ -143,7 +143,7 @@ public class TopicalBackend {
 	 *             throws an exception
 	 */
 	private void createAppointment(String adres) throws Exception {
-		List<SimpleEvent> events = listEventsNextSevenDays(adres);
+		List<SimpleEvent> events = listEventsToday(adres);
 		SimpleEvent currentEvent = getCurrentEvent(events);
 		if (currentEvent != null) {
 			throw new Exception(
