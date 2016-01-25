@@ -1,59 +1,144 @@
 <html>
 <head>
+
   <script>
-    function refreshEvents(address){
-      fetch('http://firefly:4567/events/'+address).then(function(response){
-          return response.json().then(function(events){
-            var currentEvent;
-            var upcomingEvent;
-            events.forEach(function(event){
-              var start = new Date(event.startTime);
-              var end = new Date(event.endTime);
-              var now = new Date();
-              if(now>start && now<end){
+    var roomEventsMap = [];
+
+    function reqListener() {
+        var events = JSON.parse(this.responseText);
+        var roomNumber = this.responseURL.charAt(this.responseURL.indexOf('@')-1);
+
+        roomEventsMap[roomNumber] = events;
+
+        var currentEvent;
+        var upcomingEvent;
+        events.forEach(function(event) {
+            var start = new Date(event.startTime);
+            var end = new Date(event.endTime);
+            var now = new Date();
+            if (now > start && now < end) {
                 currentEvent = event;
-              }else{
+            } else {
 
-                if(now<start && upcomingEvent === undefined){
-                  upcomingEvent=event;
+                if (now < start && upcomingEvent === undefined) {
+                    upcomingEvent = event;
                 }
-              }
-            });
-
-            var roomElement = document.querySelector('.room[data-address="'+address+'"]');
-
-            var roomTextElement = roomElement.querySelector('.text');
-
-            var roomNumber = address.replace('VKS90.','').replace('@topicus.nl','');
-            var roomSvgElement = document.getElementById(roomNumber);
-            if(currentEvent){
-              roomElement.style.backgroundColor='lightpink';
-              roomSvgElement.style.fill='lightpink';
-              roomTextElement.innerHTML=roomNumber+' is bezet door '+currentEvent.subject;
-            }else{
-              roomElement.style.backgroundColor='lightgreen';
-              roomSvgElement.style.fill='lightgreen';
-              if(upcomingEvent){
-                var startTime = new Date(upcomingEvent.startTime);
-                roomTextElement.innerHTML=roomNumber+' is vrij tot '+startTime.getHours()+':'+(startTime.getMinutes()<10?'0':'') + startTime.getMinutes();
-              }else{
-                roomTextElement.innerHTML=roomNumber+' is vrij tot het eind van de dag';
-              }
             }
         });
-      });
-    };
 
-    function refreshRooms(){
+        var roomSvgElement = document.getElementById(roomNumber);
+
+        var currentClass = roomSvgElement.getAttribute('class');
+        if (currentEvent) {
+            //if(Math.random()>0.75){
+            if (currentClass) {
+                currentClass = currentClass.replace(' busy', '');
+            } else {
+                currentClass = '';
+            }
+            roomSvgElement.setAttribute('class', currentClass + ' busy');
+        } else {
+            if (currentClass) {
+                currentClass = currentClass.replace(' busy', '');
+            } else {
+                currentClass = '';
+            }
+            roomSvgElement.setAttribute('class', currentClass);
+            if (upcomingEvent) {
+                //var startTime = new Date(upcomingEvent.startTime);
+                //roomTextElement.innerHTML=roomNumber+' is vrij tot '+startTime.getHours()+':'+(startTime.getMinutes()<10?'0':'') + startTime.getMinutes();
+            } else {
+                //roomTextElement.innerHTML=roomNumber+' is vrij tot het eind van de dag';
+            }
+        }
+        //roomSvgElement.setAttribute('class', currentClass.replace(' busy ','')+' busy ');
+      }
+
+
+    function refreshEvents(address) {
+      function reqError(err) {
+          console.log('Fetch Error :-S');
+      }
+
+      var oReq = new XMLHttpRequest();
+      oReq.onload = reqListener;
+      oReq.onerror = reqError;
+      oReq.open('get', 'http://firefly:4567/events/' + address, true);
+      oReq.send();
+    }
+
+
+
+    function refreshRooms() {
       var rooms = document.querySelectorAll('polygon');
-      for (i = 0; i < rooms.length; ++i) {
-        var address = 'VKS90.'+rooms[i].id+'@topicus.nl';
-        refreshEvents(address);
+      for (var i = 0; i < rooms.length; ++i) {
+          var address = 'VKS90.' + rooms[i].id + '@topicus.nl';
+          refreshEvents(address);
       }
     }
 
-    window.onload = function(){
+    window.onload = function() {
+      var clickRoom = function() {
+          var currentActiveName = document.querySelector('#roomnames .active');
+          if (currentActiveName) {
+              currentActiveName.classList.toggle('active');
+          }
+          document.querySelector('#roomname' + this.id).classList.toggle('active');
+
+          document.querySelector('#floorplan').className = 'r' + this.id;
+          var currentActivePolygon = document.querySelector('polygon.active');
+          if (currentActivePolygon) {
+              currentActivePolygon.setAttribute('class', currentActivePolygon.getAttribute('class').replace('active', '').trim());
+          }
+          var svgClass = this.getAttribute('class');
+          if (!svgClass) {
+              svgClass = '';
+          }
+          this.setAttribute('class', svgClass.trim() + ' active');
+          document.querySelector('#buttons').className = '';
+          var claimButton = document.querySelector('#claimbutton');
+          if (this.classList.contains('busy')) {
+              claimButton.className = 'busy';
+              claimButton.innerHTML = 'VK ' + this.id + ' is momenteel bezet';
+          } else {
+              claimButton.className = '';
+              claimButton.innerHTML = 'Claim VK ' + this.id + ' het komende uur';
+          }
+          var eventsElement = document.querySelector('#events');
+          while (eventsElement.getElementsByClassName('event')[0]) {
+              eventsElement.removeChild(eventsElement.getElementsByClassName('event')[0]);
+          }
+          for (var i = 0; i < roomEventsMap[this.id].length; i++) {
+              var event = roomEventsMap[this.id][i];
+              var start = new Date(event.startTime);
+              var end = new Date(event.endTime);
+              var eventElement = document.createElement("div");
+              eventElement.className = 'event';
+              eventElement.innerHTML = start.getHours() + ':' + (start.getMinutes() < 10 ? '0' : '') + start.getMinutes() + ' - ' + end.getHours() + ':' + (end.getMinutes() < 10 ? '0' : '') + end.getMinutes() + ' ' + event.subject;
+              eventsElement.appendChild(eventElement);
+          }
+      }
+
+      var polygons = document.querySelectorAll('polygon');
+      for (var i = 0; i < polygons.length; i++) {
+          polygons[i].addEventListener('click', clickRoom, false);
+      }
       refreshRooms();
+    }
+
+    var clickBack = function() {
+      document.querySelector('#roomnames .active').classList.toggle('active');
+      document.querySelector('polygon.active').classList.toggle('active');
+      document.querySelector('#floorplan').className = 'overview';
+      document.querySelector('#buttons').className = 'hidden';
+    }
+
+    var claim = function() {
+      var activeSvg = document.querySelector('polygon.active');
+      var activeRoom = activeSvg.id;
+      activeSvg.setAttribute('class', activeSvg.getAttribute('class') + ' busy');
+      console.log('VK ' + activeRoom + ' wordt geclaimed!');
+      clickBack();
     }
 
     setInterval(refreshRooms, 60000);
@@ -62,131 +147,228 @@
   <style>
     body{
       margin: 0;
-      font-size: 16px;
+      font-size: 26px;
       font-family: "RobotoDraft",Helvetica,Arial,sans-serif;
       font-weight: 300;
-
-    }
-    .rooms{
-      width:600px;
-      height:600px;
-      /*-webkit-transform: rotate(180deg);
-      transform: rotate(180deg);*/
-      position:relative;
-
-    }
-    .room{
-      position:absolute;
-      height:200px;
-      width:200px;
-    }
-    .room[data-address="VKS90.1@topicus.nl"]{
-      left:600px;
-      top:400px;
-      -webkit-clip-path: polygon(6% 40%, 87% 15%, 97% 84%, 15% 90%);
-      clip-path: polygon(6% 40%, 87% 15%, 97% 84%, 15% 90%);
+		overflow:hidden;
+		color:white;
     }
 
-    .room[data-address="VKS90.2@topicus.nl"]{
-      top:300px;
-      left:570px;
-      -webkit-clip-path: polygon(4% 53%, 68% 6%, 100% 63%, 21% 89%);
-      clip-path: polygon(4% 53%, 68% 6%, 100% 63%, 21% 89%);
-    }
+	#floorplan{
+		transform: perspective(600px) rotateX(30deg);
+		height:475px;
+		width:1000px;
+		margin:auto;
+		-webkit-transition: 1s ease-in;
+		-moz-transition: 1s ease-in;
+		-o-transition: 1s ease-in;
+		transition: 1s ease-in;
+	}
 
-    .room[data-address="VKS90.3@topicus.nl"]{
-      top:225px;
-      left:508px;
-      -webkit-clip-path: polygon(6% 71%, 32% 0%, 97% 40%, 34% 90%);
-      clip-path: polygon(6% 71%, 32% 0%, 97% 40%, 34% 90%);
-    }
+	#floorplan.r1{
+		transform: perspective(700px) rotateX(60deg) rotateZ(-76deg) translateY(200px) translateZ(200px);
+	}
+	#floorplan.r2{
+		transform: perspective(700px) rotateX(60deg) rotateZ(-55deg) translateY(200px) translateZ(200px);
+	}
+	#floorplan.r3{
+		transform: perspective(700px) rotateX(60deg) rotateZ(-33deg) translateY(200px) translateZ(200px);
+	}
+	#floorplan.r4{
+		transform: perspective(800px) rotateX(60deg) rotateZ(0deg) translateY(400px) translateZ(250px);
+	}
+	#floorplan.r5{
+		transform: perspective(700px) rotateX(60deg) rotateZ(33deg) translateY(200px) translateZ(200px);
+	}
+	#floorplan.r6{
+		transform: perspective(700px) rotateX(60deg) rotateZ(55deg) translateY(200px) translateZ(200px);
+	}
+	#floorplan.r7{
+		transform: perspective(700px) rotateX(60deg) rotateZ(76deg) translateY(200px) translateZ(200px);
+	}
 
-    .room[data-address="VKS90.4@topicus.nl"]{
-      top:280px;
-      left:230px;
-      height:340px;
-      width:340px;
-      -webkit-clip-path: polygon(50% 5%, 100% 40%, 70% 70%, 50% 66%, 30% 70%, 0 40%);
-      clip-path: polygon(50% 5%, 100% 40%, 70% 70%, 50% 66%, 30% 70%, 0 40%);
-    }
+	#floorplan.r8{
+		transform: perspective(800px) rotateX(60deg) rotateZ(150deg) translateY(-150px) translateZ(200px);
+	}
+  #floorplan.r9{
+		transform: perspective(800px) rotateX(60deg) rotateZ(-150deg) translateY(-150px) translateZ(200px);
+	}
 
-    .room[data-address="VKS90.5@topicus.nl"]{
-      top:225px;
-      left:92px;
-      -webkit-clip-path: polygon(68% 0, 94% 71%, 66% 90%, 3% 40%);
-      clip-path: polygon(68% 0, 94% 71%, 66% 90%, 3% 40%);
-    }
+	polygon{
+		fill: lightgreen;
+		stroke:white;
+		stroke-width: 2;
+		-webkit-transition: 0.5s ease-in-out;
+		-moz-transition: 0.5s ease-in-out;
+		-o-transition: 0.5s ease-in-out;
+		transition: 0.5s ease-in-out;
+	}
 
-    .room[data-address="VKS90.6@topicus.nl"]{
-      top:300px;
-      left:30px;
-      -webkit-clip-path: polygon(32% 6%, 96% 53%, 79% 89%, 0 63%);
-      clip-path: polygon(32% 6%, 96% 53%, 79% 89%, 0 63%);
-    }
+	polygon.busy{
+		fill: lightpink;
+	}
 
-    .room[data-address="VKS90.7@topicus.nl"]{
-      top:400px;
-      -webkit-clip-path: polygon(13% 15%, 94% 40%, 85% 90%, 3% 84%);
-      clip-path: polygon(13% 15%, 94% 40%, 85% 90%, 3% 84%);
-    }
-    .room[data-address="VKS90.8@topicus.nl"]{
-      top:400px;
-      left:150px;
-      height:250px;
-      width:220px;
-      -webkit-clip-path: polygon(33% 9%, 85% 51%, 78% 82%, 10% 82%);
-      clip-path: polygon(33% 9%, 85% 51%, 78% 82%, 10% 82%);
-    }
+	.overview polygon, polygon.active {
+	  fill:limegreen;
+	}
 
-    .room[data-address="VKS90.9@topicus.nl"]{
-      top:400px;
-      left:430px;
-      height:250px;
-      width:220px;
-      -webkit-clip-path: polygon(15% 51%, 67% 9%, 90% 82%, 22% 82%);
-      clip-path: polygon(15% 51%, 67% 9%, 90% 82%, 22% 82%);
-    }
+	.overview polygon.busy, polygon.busy.active {
+	  fill:lightcoral;
+	}
 
-    .room[data-address="Trainingsruimte.Singel.9@topicus.nl"]{
-      top:620px;
-      left:175px;
-      width:450px;
-      height:100px;
-    }
+	#buttons>div{
+		text-align:center;
+		float:left;
+		-webkit-transition: 0.5s ease-in-out;
+		-moz-transition: 0.5s ease-in-out;
+		-o-transition: 0.5s ease-in-out;
+		transition: 0.5s ease-in-out;
+	}
+	#buttons{
+		position:absolute;
+		top:70%;
+		left:10%;
+		width:80%;
+    z-index:1;
+	}
+	div#backbutton{
+		background-color:lightblue;
+		width:10%;
+		font-size:54px;
+		padding:0 50px 0 50px;
+		cursor:pointer;
+	}
+	#claimbutton{
+		padding:20px 50px 20px 50px;
+		background-color:limegreen;
+		width:100%;
+		margin-bottom:20px;
+		cursor:pointer;
+	}
+	#backbutton, #claimbutton{
+		box-shadow: 2px 7px 15px #888888;
+	}
+	#claimbutton.busy{
+		background-color: lightcoral;
+		box-shadow:none;
+		cursor:default;
+	}
+	#events{
+		width:40%;
+		margin-left:10%;
+	}
+	.event{
+		padding:20px 50px 20px 50px;
+		background-color:#eee;
+		color:darkgrey;
+		clear:both;
+		width:100%;
+		margin: 10px auto 0px auto;
 
-    .text{
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%,-50%);
-
-    }
+	}
+	.hidden>div{
+		opacity:0;
+	}
+	.hidden #events{
+		transform: translateY(100%);
+	}
+	.hidden #backbutton{
+		transform:  translateX(100%) translateY(100%);
+	}
+	#roomnames{
+		width:300px;
+		height:475px;
+		position:relative;
+		top:-475px;
+		margin:0 auto;
+    z-index:1;
+		pointer-events: none;
+    translate3d(0,0,0);
+	}
+	#roomnames > div{
+		opacity: 0;
+		transform: translateY(100%);
+		left:0;
+		right:0;
+		font-size:80px;
+		position:absolute;
+		-webkit-transition: 0.2s ease-in-out;
+		-moz-transition: 0.2s ease-in-out;
+		-o-transition: 0.2s ease-in-out;
+		transition: 0.2s ease-in-out;
+		text-shadow: 0 1px 0 #ccc,
+               0 2px 0 #c9c9c9,
+               0 3px 0 #bbb,
+               0 4px 0 #b9b9b9,
+               0 5px 0 #aaa,
+               0 6px 1px rgba(0,0,0,.1),
+               0 0 5px rgba(0,0,0,.1),
+               0 1px 3px rgba(0,0,0,.3),
+               0 3px 5px rgba(0,0,0,.2),
+               0 5px 10px rgba(0,0,0,.25),
+               0 10px 10px rgba(0,0,0,.2),
+               0 20px 20px rgba(0,0,0,.15);
+		margin:0 auto;
+		top:300px;
+		position:absolute;
+		width:250px;
+		text-align:center;
+	}
+	#roomnames>div#roomname4{
+		top:200px;
+	}
+	#roomnames>div#roomname8{
+		top:220px;
+		text-align:left;
+	}
+	#roomnames>div#roomname9{
+		top:220px;
+		text-align:right;
+	}
+	#roomnames > div.active{
+		opacity: 1;
+		transform: translateY(0);
+		-webkit-transition: 0.3s ease-in 1s;
+		-moz-transition: 0.3s ease-in 1s;
+		-o-transition: 0.3s ease-in 1s;
+		transition: 0.3s ease-in 1s;
+	}
   </style>
 </head>
 <body>
+<div id="floorplan" class="overview">
 <svg xmlns="http://www.w3.org/2000/svg" height="475" width="1000">
-  <polygon id="1" points="0,80 200,50 230,150 60,240" style="fill:lightgray;stroke:white;stroke-width:2" />
-  <polygon id="2" points="60,240 230,150 300,230 175,380" style="fill:lightgray;stroke:white;stroke-width:2" />
-  <polygon id="3" points="175,380 300,230 395,285 325,470" style="fill:lightgray;stroke:white;stroke-width:2" />
+  <polygon id="1" points="0,80 200,50 230,150 60,240"  />
+  <polygon id="2" points="60,240 230,150 300,230 175,380"  />
+  <polygon id="3" points="175,380 300,230 395,285 325,470"  />
 
-  <polygon id="4" points="380,325 395,285 300,230 425,85 500,115 575,85 700,230 605,285 620,325 500,370" style="fill:lightgray;stroke:white;stroke-width:2" />
+  <polygon id="4" points="380,325 395,285 300,230 425,85 500,115 575,85 700,230 605,285 620,325 500,370"  />
 
-  <polygon id="5" points="605,285 700,230 825,380 675,470" style="fill:lightgray;stroke:white;stroke-width:2" />
-  <polygon id="6" points="700,230 770,150 940,240 825,380" style="fill:lightgray;stroke:white;stroke-width:2" />
-  <polygon id="7" points="770,150 800,50 1000,80 940,240" style="fill:lightgray;stroke:white;stroke-width:2" />
+  <polygon id="5" points="605,285 700,230 825,380 675,470"  />
+  <polygon id="6" points="700,230 770,150 940,240 825,380"  />
+  <polygon id="7" points="770,150 800,50 1000,80 940,240"  />
 
-  <polygon id="8" points="165,55 155,0 355,0 365,60 407,107 300,230 230,150 200,50" style="fill:lightgray;stroke:white;stroke-width:2" />
-  <polygon id="9" points="835,55 845,0 645,0 635,60 593,107 700,230 770,150 800,50" style="fill:lightgray;stroke:white;stroke-width:2" />
-</svg>
-<div class="rooms">
-<div class="room" data-address="VKS90.1@topicus.nl"><div class="text"></div></div>
-<div class="room" data-address="VKS90.2@topicus.nl"><div class="text"></div></div>
-<div class="room" data-address="VKS90.3@topicus.nl"><div class="text"></div></div>
-<div class="room" data-address="VKS90.4@topicus.nl"><div class="text"></div></div>
-<div class="room" data-address="VKS90.5@topicus.nl"><div class="text"></div></div>
-<div class="room" data-address="VKS90.6@topicus.nl"><div class="text"></div></div>
-<div class="room" data-address="VKS90.7@topicus.nl"><div class="text"></div></div>
-<div class="room" data-address="VKS90.8@topicus.nl"><div class="text"></div></div>
-<div class="room" data-address="VKS90.9@topicus.nl"><div class="text"></div></div>
-<div class="room" data-address="Trainingsruimte.Singel.9@topicus.nl"><div class="text"></div></div></div>
+
+  <polygon id="8" points="835,55 845,0 645,0 635,60 593,107 700,230 770,150 800,50"  />
+  <polygon id="9" points="165,55 155,0 355,0 365,60 407,107 300,230 230,150 200,50"  />
+
+</svg></div>
+<div id="roomnames">
+	<div id="roomname1">VK 1</div>
+	<div id="roomname2">VK 2</div>
+	<div id="roomname3">VK 3</div>
+	<div id="roomname4">VK 4</div>
+	<div id="roomname5">VK 5</div>
+	<div id="roomname6">VK 6</div>
+	<div id="roomname7">VK 7</div>
+	<div id="roomname8">VK 8</div>
+	<div id="roomname9">VK 9</div>
+</div>
+<div id="buttons" class="hidden">
+	<div id="backbutton" class="button" onclick="clickBack();">&#10092;&#10092;&#10092;</div>
+	<div id="events">
+		<div id="claimbutton" class="button" onclick="claim();">Claim VK 6 de komende 34 minuten</div>
+	</div>
+</div>
 </body>
 </html>
