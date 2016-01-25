@@ -7,7 +7,7 @@ An API on top of an Exchange server (version 2010_SP2) that:
 ## API
 
 * `/rooms` returns a list of all the rooms
-* `/events/:room` returns a list of the meetings scheduled for the room within the next 7 days, starting at midnight last night
+* `/events/:room` returns a list of the meetings scheduled for today
 * `/claim/:room` claims the room for the next hour or until the next scheduled meeting, whichever comes first
 
 ## Usage / config
