@@ -73,7 +73,7 @@
     // Return to overview after 30 seconds of inactivity
     function resetAutoBackTimer(){
       window.clearTimeout(autoBackTimer);
-      autoBackTimer = window.setTimeout(function(){clickBack();},30000);
+      autoBackTimer = window.setTimeout(function(){clickBack();},300000);
     }
 
     var clickRoom = function() {
@@ -232,7 +232,7 @@
   		transform: perspective(800px) rotateX(63deg) rotateZ(-33deg) translateY(200px) translateZ(200px);
   	}
   	#floorplan.r4{
-  		transform: perspective(800px) rotateX(60deg) rotateZ(0deg) translateY(400px) translateZ(250px);
+  		transform: perspective(850px) rotateX(60deg) rotateZ(0deg) translateY(400px) translateZ(250px);
   	}
   	#floorplan.r5{
   		transform: perspective(800px) rotateX(63deg) rotateZ(33deg) translateY(200px) translateZ(200px);
@@ -273,7 +273,6 @@
     /* Buttons and upcoming events */
     #buttons>div{
   		text-align:center;
-  		float:left;
   		-webkit-transition: 0.5s ease-in-out;
   		-moz-transition: 0.5s ease-in-out;
   		-o-transition: 0.5s ease-in-out;
@@ -287,6 +286,7 @@
   	}
   	div#backbutton{
   		background-color:#D9D9D9;
+      position:absolute;
   		width:5%;
       margin-left:5%;
   		font-size:54px;
@@ -294,7 +294,7 @@
   		cursor:pointer;
   	}
   	#claimbutton{
-  		padding:20px 5% 20px 5%;
+  		padding:20px 0 20px 0;
   		background-color:limegreen;
   		width:100%;
   		margin-bottom:20px;
@@ -312,15 +312,16 @@
   	}
   	#events{
   		width:40%;
-  		margin-left:7.5%;
+      margin:0 auto;
   	}
   	.event{
-  		padding:20px 5% 20px 5%;
+  		padding:20px 0 20px 0;
   		background-color:#eee;
   		color:darkgrey;
   		clear:both;
   		width:100%;
   		margin: 10px auto 0px auto;
+      border:2px solid white;
   	}
   	.hidden>div{
   		opacity:0;
