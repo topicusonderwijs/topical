@@ -1,5 +1,7 @@
 <html>
 <head>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <script>
     var roomEventsMap = [];
@@ -11,9 +13,6 @@
     function reqListener() {
         var events = JSON.parse(this.responseText);
         var roomNumber = this.responseURL.charAt(this.responseURL.indexOf('@')-1);
-        if((''+this.responseURL).indexOf('luke')>0){
-          roomNumber = 4;
-        }
         roomEventsMap[roomNumber] = events;
 
         var currentEvent;
@@ -48,11 +47,8 @@
 
 
     function refreshEvents(address) {
-      if(address.indexOf('0.4')>0){
-        address = 'luke.niesink@topicus.nl';
-      }
       function reqError(err) {
-          console.log('Fetch Error :-S');
+          console.log(err);
       }
 
       var oReq = new XMLHttpRequest();
@@ -73,7 +69,7 @@
     // Return to overview after 30 seconds of inactivity
     function resetAutoBackTimer(){
       window.clearTimeout(autoBackTimer);
-      autoBackTimer = window.setTimeout(function(){clickBack();},300000);
+      autoBackTimer = window.setTimeout(function(){clickBack();},30000);
     }
 
     var clickRoom = function() {
@@ -123,9 +119,9 @@
         }
 
         var claimButton = document.querySelector('#claimbutton');
-        if(currentEvent){
+        if(currentEvent || this.classList.contains('busy')){
           claimButton.className = 'busy';
-          claimButton.innerHTML = 'VK ' + this.id + ' is bezet tot '+getTimestring(new Date(currentEvent.endTime));
+          claimButton.innerHTML = 'VK ' + this.id + ' is bezet' + (currentEvent? ' tot '+getTimestring(new Date(currentEvent.endTime)) :'');
         } else {
             claimButton.className = '';
             var minutesToUpcomingEvent = 60;
@@ -162,11 +158,6 @@
         console.log('gelukt!');
 
         var roomNumber = this.responseURL.charAt(this.responseURL.indexOf('@')-1);
-        if((''+this.responseURL).indexOf('luke')>0){
-          refreshEvents('luke.niesink@topicus.nl');
-        }else{
-
-        }
         refreshEvents('VKS90.'+roomNumber+'@topicus.nl');
         clickBack();
       }else{
@@ -189,7 +180,7 @@
       var oReq = new XMLHttpRequest();
       oReq.onload = claimResponseListener;
       oReq.onerror = claimErrorListener;
-      oReq.open('get', TOPICAL_BACKEND+'claim/' + 'luke.niesink@topicus.nl', true);
+      oReq.open('get', TOPICAL_BACKEND+'claim/VKS90.' +activeRoom+ '@topicus.nl', true);
       oReq.send();
     }
 
@@ -249,6 +240,32 @@
     #floorplan.r9{
   		transform: perspective(800px) rotateX(60deg) rotateZ(-150deg) translateY(-150px) translateZ(200px);
   	}
+    #title{
+      padding-top:50px;
+      font-size:80px;
+      text-align:center;
+      text-shadow: 0 1px 0 #ccc,
+                 0 2px 0 #c9c9c9,
+                 0 3px 0 #bbb,
+                 0 4px 0 #b9b9b9,
+                 0 5px 0 #aaa,
+                 0 6px 1px rgba(0,0,0,.1),
+                 0 0 5px rgba(0,0,0,.1),
+                 0 1px 3px rgba(0,0,0,.3),
+                 0 3px 5px rgba(0,0,0,.2),
+                 0 5px 10px rgba(0,0,0,.25),
+                 0 10px 10px rgba(0,0,0,.2),
+                 0 20px 20px rgba(0,0,0,.15);
+      opacity:0;
+      -webkit-transition: 1s ease-in-out;
+  		-moz-transition: 1s ease-in-out;
+  		-o-transition: 1s ease-in-out;
+  		transition: 1s ease-in-out;
+    }
+    .overview #title{
+      opacity:1;
+
+    }
 
     /* Room polygons */
   	polygon{
@@ -287,11 +304,13 @@
   	div#backbutton{
   		background-color:#D9D9D9;
       position:absolute;
-  		width:5%;
+  		width:15%;
       margin-left:5%;
   		font-size:54px;
-  		padding:0 5% 0 5%;
+  		
   		cursor:pointer;
+      height:75px;
+      text-align:center;
   	}
   	#claimbutton{
   		padding:20px 0 20px 0;
@@ -305,7 +324,7 @@
   		box-shadow: 2px 7px 15px #888888;
   	}
   	#claimbutton.busy{
-  		background-color: lightcoral;
+  		background-color: lightpink;
   		box-shadow:none;
   		cursor:default;
       border: 2px solid lightpink;
@@ -368,18 +387,27 @@
                  0 10px 10px rgba(0,0,0,.2),
                  0 20px 20px rgba(0,0,0,.15);
   		margin:0 auto;
-  		top:200px;
+  		top:170px;
   		position:absolute;
   		width:250px;
   		text-align:center;
   	}
+    #roomnames > div > div{
+      text-shadow: none;
+      margin-top:-30px;
+    }
+    #roomnames > div span{
+      font-size:40px;
+      text-align:center;
+      margin-right:-15px;
+    }
   	#roomnames>div#roomname8{
-  		top:220px;
-  		text-align:left;
+      top:200px;
+  		margin-right:70px;
   	}
   	#roomnames>div#roomname9{
-  		top:220px;
-  		text-align:right;
+      top:200px;
+  		margin-left:70px;
   	}
   	#roomnames > div.active{
   		opacity: 1;
@@ -407,18 +435,74 @@
 
   <polygon id="8" points="835,55 845,0 645,0 635,60 593,107 700,230 770,150 800,50"  />
   <polygon id="9" points="165,55 155,0 355,0 365,60 407,107 300,230 230,150 200,50"  />
-
-</svg></div>
+</svg>
+<div id="title">Topicus.education</div>
+</div>
 <div id="roomnames">
-	<div id="roomname1">VK 1</div>
-	<div id="roomname2">VK 2</div>
-	<div id="roomname3">VK 3</div>
-	<div id="roomname4">VK 4</div>
-	<div id="roomname5">VK 5</div>
-	<div id="roomname6">VK 6</div>
-	<div id="roomname7">VK 7</div>
-	<div id="roomname8">VK 8</div>
-	<div id="roomname9">VK 9</div>
+	<div id="roomname1">VK 1<br><div><span>6 x</span>
+    <svg height="50px" width="30px">
+      <path d="M 5 50 L 7 30 H 5 H 26 H 23 L 25 50 L 23 30 L 27 2" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+    </svg>
+    </div>
+  </div>
+	<div id="roomname2">VK 2<br><div><span>6 x</span>
+    <svg height="22px" width="60px">
+      <path d="M 5 20 L 4 15 L 5 5 L 10 9 L 15 8 L 20 5 L 50 15 L 55 18 L 50 20 L 5 20" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
+      <path d="M 27 8 L 23 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
+      <path d="M 33 10 L 30 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
+    </svg>
+    </div>
+  </div>
+	<div id="roomname3">VK 3<br><div><span>4 x</span>
+    <svg height="50px" width="50px">
+      <path d="M 25 50 L 25 40" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+      <path d="M 15 50 L 20 49 L 30 49 L 35 50" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+      <path d="M 10 33 L 23 38 L 28 36 L 43 10" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+      <path d="M 14 34 L 18 24 L 30 28" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+    </svg>
+    </div>
+  </div>
+	<div id="roomname4">VK 4<br><div><span>12 x</span>
+    <svg height="50px" width="30px">
+      <path d="M 5 50 L 7 30 H 5 H 26 H 23 L 25 50 L 23 30 L 27 2" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+    </svg>
+    </div>
+  </div>
+	<div id="roomname5">VK 5<br><div><span>4 x</span>
+    <svg height="50px" width="50px">
+      <path d="M 25 50 L 25 40" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+      <path d="M 15 50 L 20 49 L 30 49 L 35 50" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+      <path d="M 10 33 L 23 38 L 28 36 L 43 10" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+      <path d="M 14 34 L 18 24 L 30 28" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+    </svg>
+    </div>
+  </div>
+	<div id="roomname6">VK 6<br><div><span>6 x</span>
+    <svg height="22px" width="60px">
+      <path d="M 5 20 L 4 15 L 5 5 L 10 9 L 15 8 L 20 5 L 50 15 L 55 18 L 50 20 L 5 20" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
+      <path d="M 27 8 L 23 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
+      <path d="M 33 10 L 30 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
+    </svg>
+    </div>
+  </div>
+	<div id="roomname7">VK 7<br><div><span>6 x</span>
+    <svg height="50px" width="30px">
+      <path d="M 5 50 L 7 30 H 5 H 26 H 23 L 25 50 L 23 30 L 27 2" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+    </svg>
+    </div>
+  </div>
+	<div id="roomname8">VK 8<br><div><span>8 x</span>
+    <svg height="50px" width="30px">
+      <path d="M 5 50 L 7 30 H 5 H 26 H 23 L 25 50 L 23 30 L 27 2" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+    </svg>
+    </div>
+  </div>
+	<div id="roomname9">VK 9<br><div><span>8 x</span>
+    <svg height="50px" width="30px">
+      <path d="M 5 50 L 7 30 H 5 H 26 H 23 L 25 50 L 23 30 L 27 2" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
+    </svg>
+    </div>
+  </div>
 </div>
 <div id="buttons" class="hidden">
 	<div id="backbutton" class="button" onclick="clickBack();">&#10092;&#10092;&#10092;</div>
