@@ -4,25 +4,25 @@
   <script>
     var roomEventsMap = [];
 
+    var TOPICAL_BACKEND = 'http://firefly:4567/';
+
+    var autoBackTimer;
+
     function reqListener() {
         var events = JSON.parse(this.responseText);
         var roomNumber = this.responseURL.charAt(this.responseURL.indexOf('@')-1);
-
+        if((''+this.responseURL).indexOf('luke')>0){
+          roomNumber = 4;
+        }
         roomEventsMap[roomNumber] = events;
 
         var currentEvent;
-        var upcomingEvent;
         events.forEach(function(event) {
             var start = new Date(event.startTime);
             var end = new Date(event.endTime);
             var now = new Date();
             if (now > start && now < end) {
                 currentEvent = event;
-            } else {
-
-                if (now < start && upcomingEvent === undefined) {
-                    upcomingEvent = event;
-                }
             }
         });
 
@@ -30,7 +30,6 @@
 
         var currentClass = roomSvgElement.getAttribute('class');
         if (currentEvent) {
-            //if(Math.random()>0.75){
             if (currentClass) {
                 currentClass = currentClass.replace(' busy', '');
             } else {
@@ -44,18 +43,14 @@
                 currentClass = '';
             }
             roomSvgElement.setAttribute('class', currentClass);
-            if (upcomingEvent) {
-                //var startTime = new Date(upcomingEvent.startTime);
-                //roomTextElement.innerHTML=roomNumber+' is vrij tot '+startTime.getHours()+':'+(startTime.getMinutes()<10?'0':'') + startTime.getMinutes();
-            } else {
-                //roomTextElement.innerHTML=roomNumber+' is vrij tot het eind van de dag';
-            }
         }
-        //roomSvgElement.setAttribute('class', currentClass.replace(' busy ','')+' busy ');
       }
 
 
     function refreshEvents(address) {
+      if(address.indexOf('0.4')>0){
+        address = 'luke.niesink@topicus.nl';
+      }
       function reqError(err) {
           console.log('Fetch Error :-S');
       }
@@ -63,11 +58,9 @@
       var oReq = new XMLHttpRequest();
       oReq.onload = reqListener;
       oReq.onerror = reqError;
-      oReq.open('get', 'http://firefly:4567/events/' + address, true);
+      oReq.open('get', TOPICAL_BACKEND+'events/' + address, true);
       oReq.send();
     }
-
-
 
     function refreshRooms() {
       var rooms = document.querySelectorAll('polygon');
@@ -77,48 +70,73 @@
       }
     }
 
-    window.onload = function() {
-      var clickRoom = function() {
-          var currentActiveName = document.querySelector('#roomnames .active');
-          if (currentActiveName) {
-              currentActiveName.classList.toggle('active');
-          }
-          document.querySelector('#roomname' + this.id).classList.toggle('active');
+    // Return to overview after 30 seconds of inactivity
+    function resetAutoBackTimer(){
+      window.clearTimeout(autoBackTimer);
+      autoBackTimer = window.setTimeout(function(){clickBack();},30000);
+    }
 
-          document.querySelector('#floorplan').className = 'r' + this.id;
-          var currentActivePolygon = document.querySelector('polygon.active');
-          if (currentActivePolygon) {
-              currentActivePolygon.setAttribute('class', currentActivePolygon.getAttribute('class').replace('active', '').trim());
-          }
-          var svgClass = this.getAttribute('class');
-          if (!svgClass) {
-              svgClass = '';
-          }
-          this.setAttribute('class', svgClass.trim() + ' active');
-          document.querySelector('#buttons').className = '';
-          var claimButton = document.querySelector('#claimbutton');
-          if (this.classList.contains('busy')) {
-              claimButton.className = 'busy';
-              claimButton.innerHTML = 'VK ' + this.id + ' is momenteel bezet';
-          } else {
-              claimButton.className = '';
-              claimButton.innerHTML = 'Claim VK ' + this.id + ' het komende uur';
-          }
-          var eventsElement = document.querySelector('#events');
-          while (eventsElement.getElementsByClassName('event')[0]) {
-              eventsElement.removeChild(eventsElement.getElementsByClassName('event')[0]);
-          }
+    var clickRoom = function() {
+        resetAutoBackTimer();
+        var currentActiveName = document.querySelector('#roomnames .active');
+        if (currentActiveName) {
+            currentActiveName.classList.toggle('active');
+        }
+        document.querySelector('#roomname' + this.id).classList.toggle('active');
+
+        document.querySelector('#floorplan').className = 'r' + this.id;
+        var currentActivePolygon = document.querySelector('polygon.active');
+        if (currentActivePolygon) {
+            currentActivePolygon.setAttribute('class', currentActivePolygon.getAttribute('class').replace('active', '').trim());
+        }
+        var svgClass = this.getAttribute('class');
+        if (!svgClass) {
+            svgClass = '';
+        }
+        this.setAttribute('class', svgClass.trim() + ' active');
+        document.querySelector('#buttons').className = '';
+
+        var currentEvent = false;
+        var upcomingEvent = false;
+        var now = new Date();
+        var eventsElement = document.querySelector('#events');
+        while (eventsElement.getElementsByClassName('event')[0]) {
+            eventsElement.removeChild(eventsElement.getElementsByClassName('event')[0]);
+        }
+        if(roomEventsMap[this.id]){
           for (var i = 0; i < roomEventsMap[this.id].length; i++) {
               var event = roomEventsMap[this.id][i];
               var start = new Date(event.startTime);
               var end = new Date(event.endTime);
-              var eventElement = document.createElement("div");
-              eventElement.className = 'event';
-              eventElement.innerHTML = start.getHours() + ':' + (start.getMinutes() < 10 ? '0' : '') + start.getMinutes() + ' - ' + end.getHours() + ':' + (end.getMinutes() < 10 ? '0' : '') + end.getMinutes() + ' ' + event.subject;
-              eventsElement.appendChild(eventElement);
+              if(now>start && now<end){
+                currentEvent = event;
+              }else if(start>new Date()){
+                if(!upcomingEvent){
+                  upcomingEvent = event;
+                }
+                var eventElement = document.createElement("div");
+                eventElement.className = 'event';
+                eventElement.innerHTML = getTimestring(start) + ' - ' + getTimestring(end) + ' ' + event.subject;
+                eventsElement.appendChild(eventElement);
+              }
           }
-      }
+        }
 
+        var claimButton = document.querySelector('#claimbutton');
+        if(currentEvent){
+          claimButton.className = 'busy';
+          claimButton.innerHTML = 'VK ' + this.id + ' is bezet tot '+getTimestring(new Date(currentEvent.endTime));
+        } else {
+            claimButton.className = '';
+            var minutesToUpcomingEvent = 60;
+            if(upcomingEvent){
+              minutesToUpcomingEvent =(new Date(upcomingEvent.startTime).getTime() - now.getTime())/60000;
+            }
+            claimButton.innerHTML = 'Claim VK ' + this.id + (minutesToUpcomingEvent>=60 ? ' het komende uur' : ' de komende '+Math.floor(minutesToUpcomingEvent)+' min.')
+        }
+    }
+
+    window.onload = function() {
       var polygons = document.querySelectorAll('polygon');
       for (var i = 0; i < polygons.length; i++) {
           polygons[i].addEventListener('click', clickRoom, false);
@@ -126,213 +144,250 @@
       refreshRooms();
     }
 
+    function getTimestring(date){
+      return date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
+    }
+
     var clickBack = function() {
       document.querySelector('#roomnames .active').classList.toggle('active');
       document.querySelector('polygon.active').classList.toggle('active');
       document.querySelector('#floorplan').className = 'overview';
       document.querySelector('#buttons').className = 'hidden';
+      window.clearTimeout(autoBackTimer);
+    }
+
+    function claimResponseListener() {
+      var responsetextjson = ''+this.responseText;
+      if(responsetextjson==="claim succesvol"){
+        console.log('gelukt!');
+
+        var roomNumber = this.responseURL.charAt(this.responseURL.indexOf('@')-1);
+        if((''+this.responseURL).indexOf('luke')>0){
+          refreshEvents('luke.niesink@topicus.nl');
+        }else{
+
+        }
+        refreshEvents('VKS90.'+roomNumber+'@topicus.nl');
+        clickBack();
+      }else{
+        console.log('error: '+responsetextjson);
+      }
+    }
+
+    function claimErrorListener(err) {
+        console.log('Claimen ging mis: ');
+        console.log(err);
     }
 
     var claim = function() {
       var activeSvg = document.querySelector('polygon.active');
       var activeRoom = activeSvg.id;
       activeSvg.setAttribute('class', activeSvg.getAttribute('class') + ' busy');
+
       console.log('VK ' + activeRoom + ' wordt geclaimed!');
-      clickBack();
+
+      var oReq = new XMLHttpRequest();
+      oReq.onload = claimResponseListener;
+      oReq.onerror = claimErrorListener;
+      oReq.open('get', TOPICAL_BACKEND+'claim/' + 'luke.niesink@topicus.nl', true);
+      oReq.send();
     }
 
     setInterval(refreshRooms, 60000);
   </script>
 
   <style>
+    html, body {
+      overflow-y:hidden;
+      overflow-x:hidden;
+      height:100%;
+      width:100%;
+    }
     body{
       margin: 0;
       font-size: 26px;
       font-family: "RobotoDraft",Helvetica,Arial,sans-serif;
       font-weight: 300;
-		overflow:hidden;
-		color:white;
+		  color:white;
     }
 
-	#floorplan{
-		transform: perspective(600px) rotateX(30deg);
-		height:475px;
-		width:1000px;
-		margin:auto;
-		-webkit-transition: 1s ease-in;
-		-moz-transition: 1s ease-in;
-		-o-transition: 1s ease-in;
-		transition: 1s ease-in;
-	}
+    /* Perspectives */
+  	#floorplan{
+  		transform: perspective(600px) rotateX(30deg) translateY(-100px);
+  		height:475px;
+  		width:1000px;
+      margin:auto;
+  		-webkit-transition: 1s ease-in;
+  		-moz-transition: 1s ease-in;
+  		-o-transition: 1s ease-in;
+  		transition: 1s ease-in;
+    }
+  	#floorplan.r1{
+  		transform: perspective(800px) rotateX(63deg) rotateZ(-76deg) translateY(200px) translateZ(200px);
+  	}
+  	#floorplan.r2{
+  		transform: perspective(800px) rotateX(63deg) rotateZ(-55deg) translateY(200px) translateZ(200px);
+  	}
+  	#floorplan.r3{
+  		transform: perspective(800px) rotateX(63deg) rotateZ(-33deg) translateY(200px) translateZ(200px);
+  	}
+  	#floorplan.r4{
+  		transform: perspective(800px) rotateX(60deg) rotateZ(0deg) translateY(400px) translateZ(250px);
+  	}
+  	#floorplan.r5{
+  		transform: perspective(800px) rotateX(63deg) rotateZ(33deg) translateY(200px) translateZ(200px);
+  	}
+  	#floorplan.r6{
+  		transform: perspective(800px) rotateX(63deg) rotateZ(55deg) translateY(200px) translateZ(200px);
+  	}
+  	#floorplan.r7{
+  		transform: perspective(800px) rotateX(63deg) rotateZ(76deg) translateY(200px) translateZ(200px);
+  	}
+  	#floorplan.r8{
+  		transform: perspective(800px) rotateX(60deg) rotateZ(150deg) translateY(-150px) translateZ(200px);
+  	}
+    #floorplan.r9{
+  		transform: perspective(800px) rotateX(60deg) rotateZ(-150deg) translateY(-150px) translateZ(200px);
+  	}
 
-	#floorplan.r1{
-		transform: perspective(700px) rotateX(60deg) rotateZ(-76deg) translateY(200px) translateZ(200px);
-	}
-	#floorplan.r2{
-		transform: perspective(700px) rotateX(60deg) rotateZ(-55deg) translateY(200px) translateZ(200px);
-	}
-	#floorplan.r3{
-		transform: perspective(700px) rotateX(60deg) rotateZ(-33deg) translateY(200px) translateZ(200px);
-	}
-	#floorplan.r4{
-		transform: perspective(800px) rotateX(60deg) rotateZ(0deg) translateY(400px) translateZ(250px);
-	}
-	#floorplan.r5{
-		transform: perspective(700px) rotateX(60deg) rotateZ(33deg) translateY(200px) translateZ(200px);
-	}
-	#floorplan.r6{
-		transform: perspective(700px) rotateX(60deg) rotateZ(55deg) translateY(200px) translateZ(200px);
-	}
-	#floorplan.r7{
-		transform: perspective(700px) rotateX(60deg) rotateZ(76deg) translateY(200px) translateZ(200px);
-	}
+    /* Room polygons */
+  	polygon{
+  		fill: lightgreen;
+  		stroke:white;
+  		stroke-width: 2;
+  		-webkit-transition: 0.5s ease-in-out;
+  		-moz-transition: 0.5s ease-in-out;
+  		-o-transition: 0.5s ease-in-out;
+  		transition: 0.5s ease-in-out;
+  	}
+  	polygon.busy{
+  		fill: lightpink;
+  	}
+  	.overview polygon, polygon.active {
+  	  fill:limegreen;
+  	}
+  	.overview polygon.busy, polygon.busy.active {
+  	  fill:lightcoral;
+  	}
 
-	#floorplan.r8{
-		transform: perspective(800px) rotateX(60deg) rotateZ(150deg) translateY(-150px) translateZ(200px);
-	}
-  #floorplan.r9{
-		transform: perspective(800px) rotateX(60deg) rotateZ(-150deg) translateY(-150px) translateZ(200px);
-	}
+    /* Buttons and upcoming events */
+    #buttons>div{
+  		text-align:center;
+  		float:left;
+  		-webkit-transition: 0.5s ease-in-out;
+  		-moz-transition: 0.5s ease-in-out;
+  		-o-transition: 0.5s ease-in-out;
+  		transition: 0.5s ease-in-out;
+  	}
+  	#buttons{
+  		position:absolute;
+  		top:70%;
+  		width:100%;
+      z-index:1;
+  	}
+  	div#backbutton{
+  		background-color:#D9D9D9;
+  		width:5%;
+      margin-left:5%;
+  		font-size:54px;
+  		padding:0 5% 0 5%;
+  		cursor:pointer;
+  	}
+  	#claimbutton{
+  		padding:20px 5% 20px 5%;
+  		background-color:limegreen;
+  		width:100%;
+  		margin-bottom:20px;
+  		cursor:pointer;
+      border: 2px solid lightgreen;
+  	}
+  	#backbutton, #claimbutton{
+  		box-shadow: 2px 7px 15px #888888;
+  	}
+  	#claimbutton.busy{
+  		background-color: lightcoral;
+  		box-shadow:none;
+  		cursor:default;
+      border: 2px solid lightpink;
+  	}
+  	#events{
+  		width:40%;
+  		margin-left:7.5%;
+  	}
+  	.event{
+  		padding:20px 5% 20px 5%;
+  		background-color:#eee;
+  		color:darkgrey;
+  		clear:both;
+  		width:100%;
+  		margin: 10px auto 0px auto;
+  	}
+  	.hidden>div{
+  		opacity:0;
+  	}
+  	.hidden #events{
+  		transform: translateY(100%);
+  	}
+  	.hidden #backbutton{
+  		transform:  translateX(100%) translateY(100%);
+  	}
 
-	polygon{
-		fill: lightgreen;
-		stroke:white;
-		stroke-width: 2;
-		-webkit-transition: 0.5s ease-in-out;
-		-moz-transition: 0.5s ease-in-out;
-		-o-transition: 0.5s ease-in-out;
-		transition: 0.5s ease-in-out;
-	}
-
-	polygon.busy{
-		fill: lightpink;
-	}
-
-	.overview polygon, polygon.active {
-	  fill:limegreen;
-	}
-
-	.overview polygon.busy, polygon.busy.active {
-	  fill:lightcoral;
-	}
-
-	#buttons>div{
-		text-align:center;
-		float:left;
-		-webkit-transition: 0.5s ease-in-out;
-		-moz-transition: 0.5s ease-in-out;
-		-o-transition: 0.5s ease-in-out;
-		transition: 0.5s ease-in-out;
-	}
-	#buttons{
-		position:absolute;
-		top:70%;
-		left:10%;
-		width:80%;
-    z-index:1;
-	}
-	div#backbutton{
-		background-color:lightblue;
-		width:10%;
-		font-size:54px;
-		padding:0 50px 0 50px;
-		cursor:pointer;
-	}
-	#claimbutton{
-		padding:20px 50px 20px 50px;
-		background-color:limegreen;
-		width:100%;
-		margin-bottom:20px;
-		cursor:pointer;
-	}
-	#backbutton, #claimbutton{
-		box-shadow: 2px 7px 15px #888888;
-	}
-	#claimbutton.busy{
-		background-color: lightcoral;
-		box-shadow:none;
-		cursor:default;
-	}
-	#events{
-		width:40%;
-		margin-left:10%;
-	}
-	.event{
-		padding:20px 50px 20px 50px;
-		background-color:#eee;
-		color:darkgrey;
-		clear:both;
-		width:100%;
-		margin: 10px auto 0px auto;
-
-	}
-	.hidden>div{
-		opacity:0;
-	}
-	.hidden #events{
-		transform: translateY(100%);
-	}
-	.hidden #backbutton{
-		transform:  translateX(100%) translateY(100%);
-	}
-	#roomnames{
-		width:300px;
-		height:475px;
-		position:relative;
-		top:-475px;
-		margin:0 auto;
-    z-index:1;
-		pointer-events: none;
-    translate3d(0,0,0);
-	}
-	#roomnames > div{
-		opacity: 0;
-		transform: translateY(100%);
-		left:0;
-		right:0;
-		font-size:80px;
-		position:absolute;
-		-webkit-transition: 0.2s ease-in-out;
-		-moz-transition: 0.2s ease-in-out;
-		-o-transition: 0.2s ease-in-out;
-		transition: 0.2s ease-in-out;
-		text-shadow: 0 1px 0 #ccc,
-               0 2px 0 #c9c9c9,
-               0 3px 0 #bbb,
-               0 4px 0 #b9b9b9,
-               0 5px 0 #aaa,
-               0 6px 1px rgba(0,0,0,.1),
-               0 0 5px rgba(0,0,0,.1),
-               0 1px 3px rgba(0,0,0,.3),
-               0 3px 5px rgba(0,0,0,.2),
-               0 5px 10px rgba(0,0,0,.25),
-               0 10px 10px rgba(0,0,0,.2),
-               0 20px 20px rgba(0,0,0,.15);
-		margin:0 auto;
-		top:300px;
-		position:absolute;
-		width:250px;
-		text-align:center;
-	}
-	#roomnames>div#roomname4{
-		top:200px;
-	}
-	#roomnames>div#roomname8{
-		top:220px;
-		text-align:left;
-	}
-	#roomnames>div#roomname9{
-		top:220px;
-		text-align:right;
-	}
-	#roomnames > div.active{
-		opacity: 1;
-		transform: translateY(0);
-		-webkit-transition: 0.3s ease-in 1s;
-		-moz-transition: 0.3s ease-in 1s;
-		-o-transition: 0.3s ease-in 1s;
-		transition: 0.3s ease-in 1s;
-	}
+    /* Roomnames */
+  	#roomnames{
+  		width:300px;
+  		height:475px;
+  		position:relative;
+  		top:-475px;
+  		margin:0 auto;
+      z-index:1;
+  		pointer-events: none;
+      translate3d(0,0,0);
+  	}
+  	#roomnames > div{
+  		opacity: 0;
+  		transform: translateY(100%);
+  		left:0;
+  		right:0;
+  		font-size:80px;
+  		position:absolute;
+  		-webkit-transition: 0.2s ease-in-out;
+  		-moz-transition: 0.2s ease-in-out;
+  		-o-transition: 0.2s ease-in-out;
+  		transition: 0.2s ease-in-out;
+  		text-shadow: 0 1px 0 #ccc,
+                 0 2px 0 #c9c9c9,
+                 0 3px 0 #bbb,
+                 0 4px 0 #b9b9b9,
+                 0 5px 0 #aaa,
+                 0 6px 1px rgba(0,0,0,.1),
+                 0 0 5px rgba(0,0,0,.1),
+                 0 1px 3px rgba(0,0,0,.3),
+                 0 3px 5px rgba(0,0,0,.2),
+                 0 5px 10px rgba(0,0,0,.25),
+                 0 10px 10px rgba(0,0,0,.2),
+                 0 20px 20px rgba(0,0,0,.15);
+  		margin:0 auto;
+  		top:200px;
+  		position:absolute;
+  		width:250px;
+  		text-align:center;
+  	}
+  	#roomnames>div#roomname8{
+  		top:220px;
+  		text-align:left;
+  	}
+  	#roomnames>div#roomname9{
+  		top:220px;
+  		text-align:right;
+  	}
+  	#roomnames > div.active{
+  		opacity: 1;
+  		transform: translateY(0);
+  		-webkit-transition: 0.3s ease-in 1s;
+  		-moz-transition: 0.3s ease-in 1s;
+  		-o-transition: 0.3s ease-in 1s;
+  		transition: 0.3s ease-in 1s;
+  	}
   </style>
 </head>
 <body>
