@@ -1,0 +1,223 @@
+<html>
+<head>
+  <script>
+    var roomaddress = window.location.search.replace('?','');
+    var isClaimable = false;
+    function refreshEvents(){
+      fetch('http://localhost:4567/events/'+roomaddress).then(function(response){
+          return response.json().then(function(events){
+
+            var eventsDiv = document.querySelector('#events');
+            // clear all events
+            while (eventsDiv.hasChildNodes()) {
+              eventsDiv.removeChild(roomsDiv.lastChild);
+            }
+
+            isClaimable = true;
+
+            // add new events
+            var template = document.querySelector('#eventtemplate');
+            events.forEach(function(event){
+
+              // the subject of the event
+              template.content.querySelector('.subject').innerHTML = event.subject;
+
+              var start = new Date(event.startTime);
+              var end = new Date(event.endTime);
+
+              // the timestamp of the event
+              template.content.querySelector('.startHours').innerHTML = start.getHours();
+              template.content.querySelector('.startMinutes').innerHTML = (start.getMinutes()<10?'0':'') + start.getMinutes();
+              template.content.querySelector('.endHours').innerHTML = end.getHours();
+              template.content.querySelector('.endMinutes').innerHTML = (end.getMinutes()<10?'0':'') + end.getMinutes();
+
+              // the height of the event
+              var durationMinutes = (end-start)/60000;
+              template.content.querySelector('.event').style.height = 'calc('+(durationMinutes/6)+'% - 2px)';
+
+              // the top-position of the event
+              var minutesSince8 = ((start.getHours()-8) * 60) + start.getMinutes();
+              template.content.querySelector('.event').style.top = getPercentageFromStart(start)+"%";
+
+              var now = new Date();
+              if(now>start && now<end){
+                var event = template.content.querySelector('.event');
+                event.className = event.className+' currentEvent';
+                isClaimable = false;
+              }else{
+                template.content.querySelector('.event').className = 'event';
+              }
+
+              var clone = document.importNode(template.content, true);
+
+              eventsDiv.appendChild(clone);
+            });
+
+            refreshTime();
+
+            if(isClaimable){
+              document.querySelector('#claim').style.display = 'block';
+            }else{
+              document.querySelector('#claim').style.display = 'none';
+            }
+        });
+      });
+    };
+
+    function getPercentageFromStart(start){
+      var minutesSince8 = ((start.getHours()-8) * 60) + start.getMinutes();
+      return minutesSince8/6
+    }
+
+    function refreshTime(){
+      var now = new Date();
+      document.querySelector('#currentTime').style.top=getPercentageFromStart(now)+'%';
+      document.querySelector('#currentTime #time').innerHTML=now.getHours()+ ':'+(now.getMinutes()<10?'0':'') + now.getMinutes();
+    }
+
+    window.onload = function(){
+      refreshEvents();
+    }
+
+    // setInterval(refreshEvents, 60000);
+
+    function claim(){
+      fetch('http://localhost:4567/claim/'+roomaddress).then(function(response){
+          return response.text().then(function(text){
+            document.querySelector('#claim').innerHTML='ok';
+            document.querySelector('#claim').style.backgroundColor ='lightgreen';
+            document.querySelector('#claim').style.color ='white';
+          })});
+    }
+  </script>
+
+  <style>
+    body{
+      margin: 0;
+      background-color: #eee;
+      font-size: 16px;
+      font-family: "RobotoDraft",Helvetica,Arial,sans-serif;
+      font-weight: 300;
+      line-height: 24px
+    }
+    #timeline, #events{
+      float:left;
+      height:100%
+    }
+    #events{
+      width:60%;
+      margin-left:-20%;
+    }
+    #timeline{
+      width:40%;
+    }
+    .event{
+      background-color: white;
+
+
+      position:absolute;
+
+      width: calc(75% - 46px);
+
+      padding-left: 10px;
+      padding-right: 30px;
+      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
+                  0 1px 5px 0 rgba(0, 0, 0, 0.12),
+                  0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    }
+
+    .currentEvent{
+      background-color: grey;
+      color:white;
+    }
+    #timeline .hour{
+      height:10%;
+
+      border-width:1px 0px 0px 0px;
+      border-image: linear-gradient(to right, rgba(210,210,210,255) 0%, rgba(210,210,210,255) 60%, rgba(0,0,0,0) 100%);
+      border-image-slice: 1;
+      box-sizing: border-box;
+
+      color: #ccc;
+      text-align:right;
+
+      padding-right:calc(50% + 10px);
+      padding-top:1%;
+    }
+
+    .subject{
+      float:left;
+      padding-top:3px;
+    }
+    .event .time{
+      position:absolute;
+      bottom:0px;
+      right:0px;
+      padding-right:5px;
+      color:#ccc;
+    }
+    #currentTime{
+      height:2px;
+      position:absolute;
+      border-width:1px 0px 0px 0px;
+      border-image: linear-gradient(to right, rgba(70,0,0,255) 0%, rgba(70,0,0,255) 50%, rgba(0,0,0,0) 80%);
+      border-image-slice: 1;
+      box-sizing: border-box;
+      width:100%;
+
+    }
+    #currentTime #time{
+      margin-top:-12px;
+      margin-left:2%;
+      width:3em;
+      background-color:#eee;
+      text-align:center;
+      font-size: 1.5em;
+    }
+    #claim{
+      position:fixed;
+      right:50px;
+      bottom:50px;
+      border-radius: 50%;
+      background-color:white;
+      height:100px;
+      width:100px;
+      line-height: 100px;
+
+      text-align: center;
+      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
+                  0 1px 5px 0 rgba(0, 0, 0, 0.12),
+                  0 3px 1px -2px rgba(0, 0, 0, 0.2);
+      display: none;
+      font-size:60px;
+      color:#ccc;
+    }
+    #claim:hover{
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+<div id="timeline">
+  <div class="hour">8:00</div>
+  <div class="hour">9:00</div>
+  <div class="hour">10:00</div>
+  <div class="hour">11:00</div>
+  <div class="hour">12:00</div>
+  <div class="hour">13:00</div>
+  <div class="hour">14:00</div>
+  <div class="hour">15:00</div>
+  <div class="hour">16:00</div>
+  <div class="hour">17:00</div>
+  <div id="currentTime"><div id="time"></div></div>
+</div>
+<div id="events"></div>
+<div id="claim" onclick="claim();">+</div>
+<template id="eventtemplate">
+  <div class="event">
+    <div class="subject"></div>
+    <div class="time"><span class="startHours"></span>:<span class="startMinutes"></span> - <span class="endHours"></span>:<span class="endMinutes"></span></div>
+  </div>
+</template>
+</body>
+</html>
