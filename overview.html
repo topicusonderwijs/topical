@@ -121,7 +121,7 @@
         var claimButton = document.querySelector('#claimbutton');
         if(currentEvent || this.classList.contains('busy')){
           claimButton.className = 'busy';
-          claimButton.innerHTML = 'VK ' + this.id + ' is bezet' + (currentEvent? ' tot '+getTimestring(new Date(currentEvent.endTime)) :'');
+          claimButton.innerHTML = 'Bezet' + (currentEvent? ' tot '+getTimestring(new Date(currentEvent.endTime))+' '+currentEvent.subject :'');
         } else {
             claimButton.className = '';
             var minutesToUpcomingEvent = 60;
