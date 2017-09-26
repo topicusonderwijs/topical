@@ -6,8 +6,6 @@ node() {
 
 	dockerfile.validate { }
 
-	jekyll { }
-
 	def img = dockerfile.build {
 		name = 'topical/topical'
 	}
