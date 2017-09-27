@@ -2,7 +2,7 @@
 <head>
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta http-equiv="refresh" content="60">
+  
   <script>
     var roomEventsMap = [];
 
@@ -184,7 +184,7 @@
       oReq.send();
     }
 
-    setInterval(refreshRooms, 60000);
+    setInterval(function(){window.location.reload();}, 60000);
   </script>
 
   <style>
