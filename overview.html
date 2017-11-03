@@ -15,34 +15,47 @@
 		var roomNumber = this.responseURL.charAt(this.responseURL.indexOf('@')-1);
 		roomEventsMap[roomNumber] = events;
 
-		var currentEvent;
+		var calculatedClass = '';
 		events.forEach(function(event) {
 			var start = new Date(event.startTime);
 			var end = new Date(event.endTime);
 			var now = new Date();
+
 			if (now > start && now < end) {
-				currentEvent = event;
+				calculatedClass = 'busy';
+			}
+			else if (calculatedClass === '' && now < start) {
+				var minutesToEvent = getMinutesToEvent(event);
+				if (minutesToEvent < 15) {
+					calculatedClass = 'busysoon';
+				}
+				else if (minutesToEvent < 60) {
+					calculatedClass = 'shortavailable';
+				}
 			}
 		});
 
-		var roomSvgElement = document.getElementById(roomNumber);
+		// voor als je keurtjes wil testen ;-)
+		//if(roomNumber == '1')
+		//	calculatedClass = 'busy';
+		//if(roomNumber == '2')
+		//	calculatedClass = 'busysoon';
+		//if(roomNumber == '3')
+		//	calculatedClass = 'shortavailable';
 
+		var roomSvgElement = document.getElementById(roomNumber);
 		var currentClass = roomSvgElement.getAttribute('class');
-		if (currentEvent) {
-			if (currentClass) {
-				currentClass = currentClass.replace(' busy', '');
-			} else {
-				currentClass = '';
-			}
-			roomSvgElement.setAttribute('class', currentClass + ' busy');
-		} else {
-			if (currentClass) {
-				currentClass = currentClass.replace(' busy', '');
-			} else {
-				currentClass = '';
-			}
-			roomSvgElement.setAttribute('class', currentClass);
-		}
+		if (!currentClass)
+			currentClass = '';
+
+		// oude indicatie(s) verwijderen
+		currentClass = currentClass.replace('busy', '');
+		currentClass = currentClass.replace('shortavailable', '');
+		currentClass = currentClass.trim();
+
+		// nieuwe class er op zetten
+		var newClass = currentClass + ' ' + calculatedClass;
+		roomSvgElement.setAttribute('class', newClass);
 	}
 
 	function refreshEvents(address) {
@@ -53,7 +66,7 @@
 		var oReq = new XMLHttpRequest();
 		oReq.onload = reqListener;
 		oReq.onerror = reqError;
-		oReq.open('get', TOPICAL_BACKEND+'events/' + address, true);
+		oReq.open('get', TOPICAL_BACKEND + 'events/' + address, true);
 		oReq.send();
 	}
 
@@ -128,12 +141,18 @@
 			claimButton.innerHTML = 'Bezet' + (currentEvent? ' tot '+getTimestring(new Date(currentEvent.endTime))+' '+currentEvent.subject :'');
 		} else {
 			claimButton.className = '';
-			var minutesToUpcomingEvent = 60;
-			if (upcomingEvent) {
-				minutesToUpcomingEvent = (new Date(upcomingEvent.startTime).getTime() - now.getTime())/60000;
-			}
+			var minutesToUpcomingEvent = getMinutesToEvent(upcomingEvent);
 			claimButton.innerHTML = 'Claim VK ' + this.id + (minutesToUpcomingEvent>=60 ? ' het komende uur' : ' de komende '+Math.floor(minutesToUpcomingEvent)+' min.')
 		}
+	}
+
+	function getMinutesToEvent(event) {
+		var minutesToEvent = 60;
+		var now = new Date();
+		if (event) {
+			minutesToEvent = (new Date(event.startTime).getTime() - now.getTime())/60000;
+		}
+		return minutesToEvent;
 	}
 
 	window.onload = function() {
@@ -304,7 +323,15 @@ polygon.busy {
 }
 
 .overview polygon.busy, polygon.busy.active {
-	fill: lightcoral;
+	fill: #ff5555;
+}
+
+.overview polygon.shortavailable, polygon.shortavailable.active {
+	fill: #e9db40;
+}
+
+.overview polygon.busysoon, polygon.busysoon.active {
+	fill: DarkOrange;
 }
 
 /* Buttons and upcoming events */
