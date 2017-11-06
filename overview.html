@@ -1,519 +1,589 @@
 <html>
 <head>
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  
-  <script>
-    var roomEventsMap = [];
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-    var TOPICAL_BACKEND = 'https://topical-backend.topicusonderwijs.nl/';
+<script>
+	var roomEventsMap = [];
 
-    var autoBackTimer;
+	var TOPICAL_BACKEND = 'https://topical-backend.topicusonderwijs.nl/';
 
-    function reqListener() {
-        var events = JSON.parse(this.responseText);
-        var roomNumber = this.responseURL.charAt(this.responseURL.indexOf('@')-1);
-        roomEventsMap[roomNumber] = events;
+	var autoBackTimer;
 
-        var currentEvent;
-        events.forEach(function(event) {
-            var start = new Date(event.startTime);
-            var end = new Date(event.endTime);
-            var now = new Date();
-            if (now > start && now < end) {
-                currentEvent = event;
-            }
-        });
+	function reqListener() {
+		var events = JSON.parse(this.responseText);
+		var roomNumber = this.responseURL.charAt(this.responseURL.indexOf('@')-1);
+		roomEventsMap[roomNumber] = events;
 
-        var roomSvgElement = document.getElementById(roomNumber);
+		var calculatedClass = '';
+		events.forEach(function(event) {
+			var start = new Date(event.startTime);
+			var end = new Date(event.endTime);
+			var now = new Date();
 
-        var currentClass = roomSvgElement.getAttribute('class');
-        if (currentEvent) {
-            if (currentClass) {
-                currentClass = currentClass.replace(' busy', '');
-            } else {
-                currentClass = '';
-            }
-            roomSvgElement.setAttribute('class', currentClass + ' busy');
-        } else {
-            if (currentClass) {
-                currentClass = currentClass.replace(' busy', '');
-            } else {
-                currentClass = '';
-            }
-            roomSvgElement.setAttribute('class', currentClass);
-        }
-      }
+			if (now > start && now < end) {
+				calculatedClass = 'busy';
+			}
+			else if (calculatedClass === '' && now < start) {
+				var minutesToEvent = getMinutesToEvent(event);
+				if (minutesToEvent < 15) {
+					calculatedClass = 'busysoon';
+				}
+				else if (minutesToEvent < 60) {
+					calculatedClass = 'shortavailable';
+				}
+			}
+		});
 
+		// voor als je keurtjes wil testen ;-)
+		//if(roomNumber == '1')
+		//	calculatedClass = 'busy';
+		//if(roomNumber == '2')
+		//	calculatedClass = 'busysoon';
+		//if(roomNumber == '3')
+		//	calculatedClass = 'shortavailable';
 
-    function refreshEvents(address) {
-      function reqError(err) {
-          console.log(err);
-      }
+		var roomSvgElement = document.getElementById(roomNumber);
+		var currentClass = roomSvgElement.getAttribute('class');
+		if (!currentClass)
+			currentClass = '';
 
-      var oReq = new XMLHttpRequest();
-      oReq.onload = reqListener;
-      oReq.onerror = reqError;
-      oReq.open('get', TOPICAL_BACKEND+'events/' + address, true);
-      oReq.send();
-    }
+		// oude indicatie(s) verwijderen
+		currentClass = currentClass.replace('busy', '');
+		currentClass = currentClass.replace('shortavailable', '');
+		currentClass = currentClass.trim();
 
-    function refreshRooms() {
-      var rooms = document.querySelectorAll('polygon');
-      for (var i = 0; i < rooms.length; ++i) {
-          var address = 'VKS90.' + rooms[i].id + '@topicus.nl';
-          refreshEvents(address);
-      }
-    }
+		// nieuwe class er op zetten
+		var newClass = currentClass + ' ' + calculatedClass;
+		roomSvgElement.setAttribute('class', newClass);
+	}
 
-    // Return to overview after 30 seconds of inactivity
-    function resetAutoBackTimer(){
-      window.clearTimeout(autoBackTimer);
-      autoBackTimer = window.setTimeout(function(){clickBack();},30000);
-    }
+	function refreshEvents(address) {
+		function reqError(err) {
+			console.log(err);
+		}
 
-    var clickRoom = function() {
-        resetAutoBackTimer();
-        var currentActiveName = document.querySelector('#roomnames .active');
-        if (currentActiveName) {
-            currentActiveName.classList.toggle('active');
-        }
-        document.querySelector('#roomname' + this.id).classList.toggle('active');
+		var oReq = new XMLHttpRequest();
+		oReq.onload = reqListener;
+		oReq.onerror = reqError;
+		oReq.open('get', TOPICAL_BACKEND + 'events/' + address, true);
+		oReq.send();
+	}
 
-        document.querySelector('#floorplan').className = 'r' + this.id;
-        var currentActivePolygon = document.querySelector('polygon.active');
-        if (currentActivePolygon) {
-            currentActivePolygon.setAttribute('class', currentActivePolygon.getAttribute('class').replace('active', '').trim());
-        }
-        var svgClass = this.getAttribute('class');
-        if (!svgClass) {
-            svgClass = '';
-        }
-        this.setAttribute('class', svgClass.trim() + ' active');
-        document.querySelector('#buttons').className = '';
+	function refreshRooms() {
+		var rooms = document.querySelectorAll('polygon');
+		for (var i = 0; i < rooms.length; ++i) {
+			var address = 'VKS90.' + rooms[i].id + '@topicus.nl';
+			refreshEvents(address);
+		}
+	}
 
-        var currentEvent = false;
-        var upcomingEvent = false;
-        var now = new Date();
-        var eventsElement = document.querySelector('#events');
-        while (eventsElement.getElementsByClassName('event')[0]) {
-            eventsElement.removeChild(eventsElement.getElementsByClassName('event')[0]);
-        }
-        if(roomEventsMap[this.id]){
-          for (var i = 0; i < roomEventsMap[this.id].length; i++) {
-              var event = roomEventsMap[this.id][i];
-              var start = new Date(event.startTime);
-              var end = new Date(event.endTime);
-              if(now>start && now<end){
-                currentEvent = event;
-              }else if(start>new Date()){
-                if(!upcomingEvent){
-                  upcomingEvent = event;
-                }
-                var eventElement = document.createElement("div");
-                eventElement.className = 'event';
-                eventElement.innerHTML = getTimestring(start) + ' - ' + getTimestring(end) + ' ' + event.subject;
-                eventsElement.appendChild(eventElement);
-              }
-          }
-        }
+	// Return to overview after 30 seconds of inactivity
+	function resetAutoBackTimer() {
+		window.clearTimeout(autoBackTimer);
+		autoBackTimer = window.setTimeout(function() {clickBack();},30000);
+	}
 
-        var claimButton = document.querySelector('#claimbutton');
-        if(currentEvent || this.classList.contains('busy')){
-          claimButton.className = 'busy';
-          claimButton.innerHTML = 'Bezet' + (currentEvent? ' tot '+getTimestring(new Date(currentEvent.endTime))+' '+currentEvent.subject :'');
-        } else {
-            claimButton.className = '';
-            var minutesToUpcomingEvent = 60;
-            if(upcomingEvent){
-              minutesToUpcomingEvent =(new Date(upcomingEvent.startTime).getTime() - now.getTime())/60000;
-            }
-            claimButton.innerHTML = 'Claim VK ' + this.id + (minutesToUpcomingEvent>=60 ? ' het komende uur' : ' de komende '+Math.floor(minutesToUpcomingEvent)+' min.')
-        }
-    }
+	var clickRoom = function() {
+		resetAutoBackTimer();
 
-    window.onload = function() {
-      var polygons = document.querySelectorAll('polygon');
-      for (var i = 0; i < polygons.length; i++) {
-          polygons[i].addEventListener('click', clickRoom, false);
-      }
-      refreshRooms();
-    }
+		var currentActiveName = document.querySelector('#roomnames .active');
+		if (currentActiveName) {
+			currentActiveName.classList.toggle('active');
+		}
 
-    function getTimestring(date){
-      return date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
-    }
+		document.querySelector('#roomname' + this.id).classList.toggle('active');
+		document.querySelector('#floorplan').className = 'r' + this.id;
 
-    var clickBack = function() {
-      document.querySelector('#roomnames .active').classList.toggle('active');
-      document.querySelector('polygon.active').classList.toggle('active');
-      document.querySelector('#floorplan').className = 'overview';
-      document.querySelector('#buttons').className = 'hidden';
-      window.clearTimeout(autoBackTimer);
-    }
+		var currentActivePolygon = document.querySelector('polygon.active');
+		if (currentActivePolygon) {
+			currentActivePolygon.setAttribute('class', currentActivePolygon.getAttribute('class').replace('active', '').trim());
+		}
 
-    function claimResponseListener() {
-      var responsetextjson = ''+this.responseText;
-      if(responsetextjson==="claim succesvol"){
-        console.log('gelukt!');
+		var svgClass = this.getAttribute('class');
+		if (!svgClass) {
+			svgClass = '';
+		}
 
-        var roomNumber = this.responseURL.charAt(this.responseURL.indexOf('@')-1);
-        refreshEvents('VKS90.'+roomNumber+'@topicus.nl');
-        clickBack();
-      }else{
-        console.log('error: '+responsetextjson);
-      }
-    }
+		this.setAttribute('class', svgClass.trim() + ' active');
+		document.querySelector('#buttons').className = '';
 
-    function claimErrorListener(err) {
-        console.log('Claimen ging mis: ');
-        console.log(err);
-    }
+		var currentEvent = false;
+		var upcomingEvent = false;
+		var now = new Date();
+		var eventsElement = document.querySelector('#events');
+		while (eventsElement.getElementsByClassName('event')[0]) {
+			eventsElement.removeChild(eventsElement.getElementsByClassName('event')[0]);
+		}
 
-    var claim = function() {
-      var activeSvg = document.querySelector('polygon.active');
-      var activeRoom = activeSvg.id;
-      activeSvg.setAttribute('class', activeSvg.getAttribute('class') + ' busy');
+		if (roomEventsMap[this.id]) {
+			for (var i = 0; i < roomEventsMap[this.id].length; i++) {
+				var event = roomEventsMap[this.id][i];
+				var start = new Date(event.startTime);
+				var end = new Date(event.endTime);
+				if (now > start && now < end) {
+					currentEvent = event;
+				} else if (start > new Date()) {
+					if (!upcomingEvent) {
+						upcomingEvent = event;
+					}
+					var eventElement = document.createElement("div");
+					eventElement.className = 'event';
+					eventElement.innerHTML = getTimestring(start) + ' - ' + getTimestring(end) + ' ' + event.subject;
+					eventsElement.appendChild(eventElement);
+				}
+			}
+		}
 
-      console.log('VK ' + activeRoom + ' wordt geclaimed!');
+		var claimButton = document.querySelector('#claimbutton');
+		if (currentEvent || this.classList.contains('busy')) {
+			claimButton.className = 'busy';
+			claimButton.innerHTML = 'Bezet' + (currentEvent? ' tot '+getTimestring(new Date(currentEvent.endTime))+' '+currentEvent.subject :'');
+		} else {
+			claimButton.className = '';
+			var minutesToUpcomingEvent = getMinutesToEvent(upcomingEvent);
+			claimButton.innerHTML = 'Claim VK ' + this.id + (minutesToUpcomingEvent>=60 ? ' het komende uur' : ' de komende '+Math.floor(minutesToUpcomingEvent)+' min.')
+		}
+	}
 
-      var oReq = new XMLHttpRequest();
-      oReq.onload = claimResponseListener;
-      oReq.onerror = claimErrorListener;
-      oReq.open('get', TOPICAL_BACKEND+'claim/VKS90.' +activeRoom+ '@topicus.nl', true);
-      oReq.send();
-    }
+	function getMinutesToEvent(event) {
+		var minutesToEvent = 60;
+		var now = new Date();
+		if (event) {
+			minutesToEvent = (new Date(event.startTime).getTime() - now.getTime())/60000;
+		}
+		return minutesToEvent;
+	}
 
-    setInterval(function(){window.location.reload();}, 60000);
-  </script>
+	window.onload = function() {
+		var polygons = document.querySelectorAll('polygon');
+		for (var i = 0; i < polygons.length; i++) {
+			polygons[i].addEventListener('click', clickRoom, false);
+		}
+		refreshRooms();
+	}
 
-  <style>
-    html, body {
-      overflow-y:hidden;
-      overflow-x:hidden;
-      height:100%;
-      width:100%;
-    }
-    body{
-      margin: 0;
-      font-size: 26px;
-      font-family: "RobotoDraft",Helvetica,Arial,sans-serif;
-      font-weight: 300;
-		  color:white;
-    }
+	function getTimestring(date) {
+		return date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
+	}
 
-    /* Perspectives */
-  	#floorplan{
-  		transform: perspective(600px) rotateX(30deg) translateY(-100px);
-  		height:475px;
-  		width:1000px;
-      margin:auto;
-  		-webkit-transition: 1s ease-in;
-  		-moz-transition: 1s ease-in;
-  		-o-transition: 1s ease-in;
-  		transition: 1s ease-in;
-    }
-  	#floorplan.r1{
-  		transform: perspective(800px) rotateX(63deg) rotateZ(-76deg) translateY(200px) translateZ(200px);
-  	}
-  	#floorplan.r2{
-  		transform: perspective(800px) rotateX(63deg) rotateZ(-55deg) translateY(200px) translateZ(200px);
-  	}
-  	#floorplan.r3{
-  		transform: perspective(800px) rotateX(63deg) rotateZ(-33deg) translateY(200px) translateZ(200px);
-  	}
-  	#floorplan.r4{
-  		transform: perspective(850px) rotateX(60deg) rotateZ(0deg) translateY(400px) translateZ(250px);
-  	}
-  	#floorplan.r5{
-  		transform: perspective(800px) rotateX(63deg) rotateZ(33deg) translateY(200px) translateZ(200px);
-  	}
-  	#floorplan.r6{
-  		transform: perspective(800px) rotateX(63deg) rotateZ(55deg) translateY(200px) translateZ(200px);
-  	}
-  	#floorplan.r7{
-  		transform: perspective(800px) rotateX(63deg) rotateZ(76deg) translateY(200px) translateZ(200px);
-  	}
-  	#floorplan.r8{
-  		transform: perspective(800px) rotateX(60deg) rotateZ(150deg) translateY(-150px) translateZ(200px);
-  	}
-    #floorplan.r9{
-  		transform: perspective(800px) rotateX(60deg) rotateZ(-150deg) translateY(-150px) translateZ(200px);
-  	}
-    #title{
-      padding-top:50px;
-      font-size:80px;
-      text-align:center;
-      text-shadow: 0 1px 0 #ccc,
-                 0 2px 0 #c9c9c9,
-                 0 3px 0 #bbb,
-                 0 4px 0 #b9b9b9,
-                 0 5px 0 #aaa,
-                 0 6px 1px rgba(0,0,0,.1),
-                 0 0 5px rgba(0,0,0,.1),
-                 0 1px 3px rgba(0,0,0,.3),
-                 0 3px 5px rgba(0,0,0,.2),
-                 0 5px 10px rgba(0,0,0,.25),
-                 0 10px 10px rgba(0,0,0,.2),
-                 0 20px 20px rgba(0,0,0,.15);
-      opacity:0;
-      -webkit-transition: 1s ease-in-out;
-  		-moz-transition: 1s ease-in-out;
-  		-o-transition: 1s ease-in-out;
-  		transition: 1s ease-in-out;
-    }
-    .overview #title{
-      opacity:1;
+	var clickBack = function() {
+		document.querySelector('#roomnames .active').classList.toggle('active');
+		document.querySelector('polygon.active').classList.toggle('active');
+		document.querySelector('#floorplan').className = 'overview';
+		document.querySelector('#buttons').className = 'hidden';
+		window.clearTimeout(autoBackTimer);
+	}
 
-    }
+	function claimResponseListener() {
+		var responsetextjson = ''+this.responseText;
+		if (responsetextjson==="claim succesvol") {
+			console.log('gelukt!');
 
-    /* Room polygons */
-  	polygon{
-  		fill: lightgreen;
-  		stroke:white;
-  		stroke-width: 2;
-  		-webkit-transition: 0.5s ease-in-out;
-  		-moz-transition: 0.5s ease-in-out;
-  		-o-transition: 0.5s ease-in-out;
-  		transition: 0.5s ease-in-out;
-  	}
-  	polygon.busy{
-  		fill: lightpink;
-  	}
-  	.overview polygon, polygon.active {
-  	  fill:limegreen;
-  	}
-  	.overview polygon.busy, polygon.busy.active {
-  	  fill:lightcoral;
-  	}
+			var roomNumber = this.responseURL.charAt(this.responseURL.indexOf('@')-1);
+			refreshEvents('VKS90.'+roomNumber+'@topicus.nl');
+			clickBack();
+		}else{
+			console.log('error: '+responsetextjson);
+		}
+	}
 
-    /* Buttons and upcoming events */
-    #buttons>div{
-  		text-align:center;
-  		-webkit-transition: 0.5s ease-in-out;
-  		-moz-transition: 0.5s ease-in-out;
-  		-o-transition: 0.5s ease-in-out;
-  		transition: 0.5s ease-in-out;
-  	}
-  	#buttons{
-  		position:absolute;
-  		top:70%;
-  		width:100%;
-      z-index:1;
-  	}
-  	div#backbutton{
-  		background-color:#D9D9D9;
-      position:absolute;
-  		width:15%;
-      margin-left:5%;
-  		font-size:54px;
+	function claimErrorListener(err) {
+		console.log('Claimen ging mis: ');
+		console.log(err);
+	}
 
-  		cursor:pointer;
-      height:75px;
-      text-align:center;
-  	}
-  	#claimbutton{
-  		padding:20px 0 20px 0;
-  		background-color:limegreen;
-  		width:100%;
-  		margin-bottom:20px;
-  		cursor:pointer;
-      border: 2px solid lightgreen;
-  	}
-  	#backbutton, #claimbutton{
-  		box-shadow: 2px 7px 15px #888888;
-  	}
-  	#claimbutton.busy{
-  		background-color: lightpink;
-  		box-shadow:none;
-  		cursor:default;
-      border: 2px solid lightpink;
-  	}
-  	#events{
-  		width:40%;
-      margin:0 auto;
-  	}
-  	.event{
-  		padding:20px 0 20px 0;
-  		background-color:#eee;
-  		color:darkgrey;
-  		clear:both;
-  		width:100%;
-  		margin: 10px auto 0px auto;
-      border:2px solid white;
-  	}
-  	.hidden>div{
-  		opacity:0;
-  	}
-  	.hidden #events{
-  		transform: translateY(100%);
-  	}
-  	.hidden #backbutton{
-  		transform:  translateX(100%) translateY(100%);
-  	}
+	var claim = function() {
+		var activeSvg = document.querySelector('polygon.active');
+		var activeRoom = activeSvg.id;
+		activeSvg.setAttribute('class', activeSvg.getAttribute('class') + ' busy');
 
-    /* Roomnames */
-  	#roomnames{
-  		width:300px;
-  		height:475px;
-  		position:relative;
-  		top:-475px;
-  		margin:0 auto;
-      z-index:1;
-  		pointer-events: none;
-      translate3d(0,0,0);
-  	}
-  	#roomnames > div{
-  		opacity: 0;
-  		transform: translateY(100%);
-  		left:0;
-  		right:0;
-  		font-size:80px;
-  		position:absolute;
-  		-webkit-transition: 0.2s ease-in-out;
-  		-moz-transition: 0.2s ease-in-out;
-  		-o-transition: 0.2s ease-in-out;
-  		transition: 0.2s ease-in-out;
-  		text-shadow: 0 1px 0 #ccc,
-                 0 2px 0 #c9c9c9,
-                 0 3px 0 #bbb,
-                 0 4px 0 #b9b9b9,
-                 0 5px 0 #aaa,
-                 0 6px 1px rgba(0,0,0,.1),
-                 0 0 5px rgba(0,0,0,.1),
-                 0 1px 3px rgba(0,0,0,.3),
-                 0 3px 5px rgba(0,0,0,.2),
-                 0 5px 10px rgba(0,0,0,.25),
-                 0 10px 10px rgba(0,0,0,.2),
-                 0 20px 20px rgba(0,0,0,.15);
-  		margin:0 auto;
-  		top:170px;
-  		position:absolute;
-  		width:250px;
-  		text-align:center;
-  	}
-    #roomnames > div > div{
-      text-shadow: none;
-      margin-top:-30px;
-    }
-    #roomnames > div span{
-      font-size:40px;
-      text-align:center;
-      margin-right:-15px;
-    }
-  	#roomnames>div#roomname8{
-      top:200px;
-  		margin-right:70px;
-  	}
-  	#roomnames>div#roomname9{
-      top:200px;
-  		margin-left:70px;
-  	}
-  	#roomnames > div.active{
-  		opacity: 1;
-  		transform: translateY(0);
-  		-webkit-transition: 0.3s ease-in 1s;
-  		-moz-transition: 0.3s ease-in 1s;
-  		-o-transition: 0.3s ease-in 1s;
-  		transition: 0.3s ease-in 1s;
-  	}
-  </style>
+		console.log('VK ' + activeRoom + ' wordt geclaimed!');
+
+		var oReq = new XMLHttpRequest();
+		oReq.onload = claimResponseListener;
+		oReq.onerror = claimErrorListener;
+		oReq.open('get', TOPICAL_BACKEND + 'claim/VKS90.' + activeRoom + '@topicus.nl', true);
+		oReq.send();
+	}
+
+	setInterval(function() {window.location.reload();}, 60000);
+</script>
+
+<style>
+html, body {
+	overflow-y: hidden;
+	overflow-x: hidden;
+	height: 100%;
+	width: 100%;
+}
+
+body {
+	margin: 0;
+	font-size: 26px;
+	font-family: "RobotoDraft", Helvetica, Arial, sans-serif;
+	font-weight: 300;
+	color: white;
+}
+
+/* Perspectives */
+#floorplan {
+	transform: perspective(600px) rotateX(30deg) translateY(-100px);
+	height: 475px;
+	width: 1000px;
+	margin: auto;
+	-webkit-transition: 1s ease-in;
+	-moz-transition: 1s ease-in;
+	-o-transition: 1s ease-in;
+	transition: 1s ease-in;
+}
+
+#floorplan.r1 {
+	transform: perspective(800px) rotateX(63deg) rotateZ(-76deg)
+		translateY(200px) translateZ(200px);
+}
+
+#floorplan.r2 {
+	transform: perspective(800px) rotateX(63deg) rotateZ(-55deg)
+		translateY(200px) translateZ(200px);
+}
+
+#floorplan.r3 {
+	transform: perspective(800px) rotateX(63deg) rotateZ(-33deg)
+		translateY(200px) translateZ(200px);
+}
+
+#floorplan.r4 {
+	transform: perspective(850px) rotateX(60deg) rotateZ(0deg)
+		translateY(400px) translateZ(250px);
+}
+
+#floorplan.r5 {
+	transform: perspective(800px) rotateX(63deg) rotateZ(33deg)
+		translateY(200px) translateZ(200px);
+}
+
+#floorplan.r6 {
+	transform: perspective(800px) rotateX(63deg) rotateZ(55deg)
+		translateY(200px) translateZ(200px);
+}
+
+#floorplan.r7 {
+	transform: perspective(800px) rotateX(63deg) rotateZ(76deg)
+		translateY(200px) translateZ(200px);
+}
+
+#floorplan.r8 {
+	transform: perspective(800px) rotateX(60deg) rotateZ(150deg)
+		translateY(-150px) translateZ(200px);
+}
+
+#floorplan.r9 {
+	transform: perspective(800px) rotateX(60deg) rotateZ(-150deg)
+		translateY(-150px) translateZ(200px);
+}
+
+#title {
+	padding-top: 50px;
+	font-size: 80px;
+	text-align: center;
+	text-shadow: 0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0
+		#b9b9b9, 0 5px 0 #aaa, 0 6px 1px rgba(0, 0, 0, .1), 0 0 5px
+		rgba(0, 0, 0, .1), 0 1px 3px rgba(0, 0, 0, .3), 0 3px 5px
+		rgba(0, 0, 0, .2), 0 5px 10px rgba(0, 0, 0, .25), 0 10px 10px
+		rgba(0, 0, 0, .2), 0 20px 20px rgba(0, 0, 0, .15);
+	opacity: 0;
+	-webkit-transition: 1s ease-in-out;
+	-moz-transition: 1s ease-in-out;
+	-o-transition: 1s ease-in-out;
+	transition: 1s ease-in-out;
+}
+
+.overview #title {
+	opacity: 1;
+}
+
+/* Room polygons */
+polygon {
+	fill: lightgreen;
+	stroke: white;
+	stroke-width: 2;
+	-webkit-transition: 0.5s ease-in-out;
+	-moz-transition: 0.5s ease-in-out;
+	-o-transition: 0.5s ease-in-out;
+	transition: 0.5s ease-in-out;
+}
+
+polygon.busy {
+	fill: lightpink;
+}
+
+.overview polygon, polygon.active {
+	fill: limegreen;
+}
+
+.overview polygon.busy, polygon.busy.active {
+	fill: #ff5555;
+}
+
+.overview polygon.shortavailable, polygon.shortavailable.active {
+	fill: #e9db40;
+}
+
+.overview polygon.busysoon, polygon.busysoon.active {
+	fill: DarkOrange;
+}
+
+/* Buttons and upcoming events */
+#buttons>div {
+	text-align: center;
+	-webkit-transition: 0.5s ease-in-out;
+	-moz-transition: 0.5s ease-in-out;
+	-o-transition: 0.5s ease-in-out;
+	transition: 0.5s ease-in-out;
+}
+
+#buttons {
+	position: absolute;
+	top: 70%;
+	width: 100%;
+	z-index: 1;
+}
+
+div#backbutton {
+	background-color: #D9D9D9;
+	position: absolute;
+	width: 15%;
+	margin-left: 5%;
+	font-size: 54px;
+	cursor: pointer;
+	height: 75px;
+	text-align: center;
+}
+
+#claimbutton {
+	padding: 20px 0 20px 0;
+	background-color: limegreen;
+	width: 100%;
+	margin-bottom: 20px;
+	cursor: pointer;
+	border: 2px solid lightgreen;
+}
+
+#backbutton, #claimbutton {
+	box-shadow: 2px 7px 15px #888888;
+}
+
+#claimbutton.busy {
+	background-color: lightpink;
+	box-shadow: none;
+	cursor: default;
+	border: 2px solid lightpink;
+}
+
+#events {
+	width: 40%;
+	margin: 0 auto;
+}
+
+.event {
+	padding: 20px 0 20px 0;
+	background-color: #eee;
+	color: darkgrey;
+	clear: both;
+	width: 100%;
+	margin: 10px auto 0px auto;
+	border: 2px solid white;
+}
+
+.hidden>div {
+	opacity: 0;
+}
+
+.hidden #events {
+	transform: translateY(100%);
+}
+
+.hidden #backbutton {
+	transform: translateX(100%) translateY(100%);
+}
+
+/* Roomnames */
+#roomnames {
+	width: 300px;
+	height: 475px;
+	position: relative;
+	top: -475px;
+	margin: 0 auto;
+	z-index: 1;
+	pointer-events: none;
+	translate3d
+	(0,0,0);
+}
+
+#roomnames>div {
+	opacity: 0;
+	transform: translateY(100%);
+	left: 0;
+	right: 0;
+	font-size: 80px;
+	position: absolute;
+	-webkit-transition: 0.2s ease-in-out;
+	-moz-transition: 0.2s ease-in-out;
+	-o-transition: 0.2s ease-in-out;
+	transition: 0.2s ease-in-out;
+	text-shadow: 0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0
+		#b9b9b9, 0 5px 0 #aaa, 0 6px 1px rgba(0, 0, 0, .1), 0 0 5px
+		rgba(0, 0, 0, .1), 0 1px 3px rgba(0, 0, 0, .3), 0 3px 5px
+		rgba(0, 0, 0, .2), 0 5px 10px rgba(0, 0, 0, .25), 0 10px 10px
+		rgba(0, 0, 0, .2), 0 20px 20px rgba(0, 0, 0, .15);
+	margin: 0 auto;
+	top: 170px;
+	position: absolute;
+	width: 250px;
+	text-align: center;
+}
+
+#roomnames>div>div {
+	text-shadow: none;
+	margin-top: -30px;
+}
+
+#roomnames>div span {
+	font-size: 40px;
+	text-align: center;
+	margin-right: -15px;
+}
+
+#roomnames>div#roomname8 {
+	top: 200px;
+	margin-right: 70px;
+}
+
+#roomnames>div#roomname9 {
+	top: 200px;
+	margin-left: 70px;
+}
+
+#roomnames>div.active {
+	opacity: 1;
+	transform: translateY(0);
+	-webkit-transition: 0.3s ease-in 1s;
+	-moz-transition: 0.3s ease-in 1s;
+	-o-transition: 0.3s ease-in 1s;
+	transition: 0.3s ease-in 1s;
+}
+</style>
 </head>
 <body>
-<div id="floorplan" class="overview">
-<svg xmlns="http://www.w3.org/2000/svg" height="475" width="1000">
-  <polygon id="1" points="0,80 200,50 230,150 60,240"  />
-  <polygon id="2" points="60,240 230,150 300,230 175,380"  />
-  <polygon id="3" points="175,380 300,230 395,285 325,470"  />
-
-  <polygon id="4" points="380,325 395,285 300,230 425,85 500,115 575,85 700,230 605,285 620,325 500,370"  />
-
-  <polygon id="5" points="605,285 700,230 825,380 675,470"  />
-  <polygon id="6" points="700,230 770,150 940,240 825,380"  />
-  <polygon id="7" points="770,150 800,50 1000,80 940,240"  />
-
-
-  <polygon id="8" points="835,55 845,0 645,0 635,60 593,107 700,230 770,150 800,50"  />
-  <polygon id="9" points="165,55 155,0 355,0 365,60 407,107 300,230 230,150 200,50"  />
-</svg>
-<div id="title">Topicus.education</div>
-</div>
-<div id="roomnames">
-	<div id="roomname1">VK 1<br><div><span>6 x</span>
-    <svg height="50px" width="30px">
-      <path d="M 5 30 H 26 H 23 L 27 2" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
-      <path d="M 5 50 L 7 30 H 23 L 25 50" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
-    </svg>
-    </div>
-  </div>
-	<div id="roomname2">VK 2<br><div><span>6 x</span>
-    <svg height="22px" width="60px">
-      <path d="M 5 20 L 4 15 L 5 5 L 10 9 L 15 8 L 20 5 L 50 15 L 55 18 L 50 20 L 5 20" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
-      <path d="M 27 8 L 23 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
-      <path d="M 33 10 L 30 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
-    </svg>
-    </div>
-  </div>
-	<div id="roomname3">VK 3<br><div><span>4 x</span>
-    <svg height="50px" width="50px">
-      <path d="M 25 50 L 25 40" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
-      <path d="M 15 50 L 20 49 L 30 49 L 35 50" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
-      <path d="M 10 33 L 23 38 L 28 36 L 43 10" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
-      <path d="M 14 34 L 18 24 L 30 28" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
-    </svg>
-    </div>
-  </div>
-	<div id="roomname4">VK 4<br><div><span>12 x</span>
-    <svg height="50px" width="30px">
-      <path d="M 5 30 H 26 H 23 L 27 2" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
-      <path d="M 5 50 L 7 30 H 23 L 25 50" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
-    </svg>
-    </div>
-  </div>
-	<div id="roomname5">VK 5<br><div><span>4 x</span>
-    <svg height="50px" width="50px">
-      <path d="M 25 50 L 25 40" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
-      <path d="M 15 50 L 20 49 L 30 49 L 35 50" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
-      <path d="M 10 33 L 23 38 L 28 36 L 43 10" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
-      <path d="M 14 34 L 18 24 L 30 28" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="transparent"/>
-    </svg>
-    </div>
-  </div>
-	<div id="roomname6">VK 6<br><div><span>6 x</span>
-    <svg height="22px" width="60px">
-      <path d="M 5 20 L 4 15 L 5 5 L 10 9 L 15 8 L 20 5 L 50 15 L 55 18 L 50 20 L 5 20" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
-      <path d="M 27 8 L 23 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
-      <path d="M 33 10 L 30 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white"/>
-    </svg>
-    </div>
-  </div>
-	<div id="roomname7">VK 7<br><div><span>6 x</span>
-    <svg height="50px" width="30px">
-      <path d="M 5 30 H 26 H 23 L 27 2" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
-      <path d="M 5 50 L 7 30 H 23 L 25 50" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
-    </svg>
-    </div>
-  </div>
-	<div id="roomname8">VK 8<br><div><span>8 x</span>
-    <svg height="50px" width="30px">
-      <path d="M 5 30 H 26 H 23 L 27 2" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
-      <path d="M 5 50 L 7 30 H 23 L 25 50" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
-    </svg>
-    </div>
-  </div>
-	<div id="roomname9">VK 9<br><div><span>8 x</span>
-    <svg height="50px" width="30px">
-      <path d="M 5 30 H 26 H 23 L 27 2" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
-      <path d="M 5 50 L 7 30 H 23 L 25 50" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
-    </svg>
-    </div>
-  </div>
-</div>
-<div id="buttons" class="hidden">
-	<div id="backbutton" class="button" onclick="clickBack();">&#10092;&#10092;&#10092;</div>
-	<div id="events">
-		<div id="claimbutton" class="button" onclick="claim();">Claim VK 6 de komende 34 minuten</div>
+	<div id="floorplan" class="overview">
+		<svg xmlns="http://www.w3.org/2000/svg" height="475" width="1000">
+			<polygon id="1" points="0,80 200,50 230,150 60,240" />
+			<polygon id="2" points="60,240 230,150 300,230 175,380" />
+			<polygon id="3" points="175,380 300,230 395,285 325,470" />
+			<polygon id="4" points="380,325 395,285 300,230 425,85 500,115 575,85 700,230 605,285 620,325 500,370" />
+			<polygon id="5" points="605,285 700,230 825,380 675,470" />
+			<polygon id="6" points="700,230 770,150 940,240 825,380" />
+			<polygon id="7" points="770,150 800,50 1000,80 940,240" />
+			<polygon id="8" points="835,55 845,0 645,0 635,60 593,107 700,230 770,150 800,50" />
+			<polygon id="9" points="165,55 155,0 355,0 365,60 407,107 300,230 230,150 200,50" />
+		</svg>
+		<div id="title">Topicus.education</div>
 	</div>
-</div>
+	<div id="roomnames">
+		<div id="roomname1">VK 1<br>
+			<div>
+				<span>6 x</span>
+				<svg height="50px" width="30px">
+					<path d="M 5 30 H 26 H 23 L 27 2" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
+					<path d="M 5 50 L 7 30 H 23 L 25 50" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
+				</svg>
+			</div>
+		</div>
+		<div id="roomname2">VK 2<br>
+			<div>
+				<span>6 x</span>
+				<svg height="22px" width="60px">
+					<path d="M 5 20 L 4 15 L 5 5 L 10 9 L 15 8 L 20 5 L 50 15 L 55 18 L 50 20 L 5 20" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white" />
+					<path d="M 27 8 L 23 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white" />
+					<path d="M 33 10 L 30 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white" />
+				</svg>
+			</div>
+		</div>
+		<div id="roomname3">VK 3<br>
+			<div>
+				<span>4 x</span>
+				<svg height="50px" width="50px">
+					<path d="M 25 50 L 25 40" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent" />
+					<path d="M 15 50 L 20 49 L 30 49 L 35 50" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent" />
+					<path d="M 10 33 L 23 38 L 28 36 L 43 10" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="transparent" />
+					<path d="M 14 34 L 18 24 L 30 28" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="transparent" />
+				</svg>
+			</div>
+		</div>
+		<div id="roomname4">VK 4<br>
+			<div>
+				<span>12 x</span>
+				<svg height="50px" width="30px">
+					<path d="M 5 30 H 26 H 23 L 27 2" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
+					<path d="M 5 50 L 7 30 H 23 L 25 50" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
+				</svg>
+			</div>
+		</div>
+		<div id="roomname5">VK 5<br>
+			<div>
+				<span>4 x</span>
+				<svg height="50px" width="50px">
+					<path d="M 25 50 L 25 40" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent" />
+					<path d="M 15 50 L 20 49 L 30 49 L 35 50" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="transparent" />
+					<path d="M 10 33 L 23 38 L 28 36 L 43 10" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="transparent" />
+					<path d="M 14 34 L 18 24 L 30 28" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="transparent" />
+				</svg>
+			</div>
+		</div>
+		<div id="roomname6">VK 6<br>
+			<div>
+				<span>6 x</span>
+				<svg height="22px" width="60px">
+					<path d="M 5 20 L 4 15 L 5 5 L 10 9 L 15 8 L 20 5 L 50 15 L 55 18 L 50 20 L 5 20" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white" />
+					<path d="M 27 8 L 23 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white" />
+					<path d="M 33 10 L 30 16" stroke="grey" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="white" />
+				</svg>
+			</div>
+		</div>
+		<div id="roomname7">VK 7<br>
+			<div>
+				<span>6 x</span>
+				<svg height="50px" width="30px">
+					<path d="M 5 30 H 26 H 23 L 27 2" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
+					<path d="M 5 50 L 7 30 H 23 L 25 50" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
+				</svg>
+			</div>
+		</div>
+		<div id="roomname8">VK 8<br>
+			<div>
+				<span>8 x</span>
+				<svg height="50px" width="30px">
+					<path d="M 5 30 H 26 H 23 L 27 2" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
+					<path d="M 5 50 L 7 30 H 23 L 25 50" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
+				</svg>
+			</div>
+		</div>
+		<div id="roomname9">VK 9<br>
+			<div>
+				<span>8 x</span>
+				<svg height="50px" width="30px">
+					<path d="M 5 30 H 26 H 23 L 27 2" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
+					<path d="M 5 50 L 7 30 H 23 L 25 50" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="transparent"></path>
+				</svg>
+			</div>
+		</div>
+	</div>
+	<div id="buttons" class="hidden">
+		<div id="backbutton" class="button" onclick="clickBack();">&#10092;&#10092;&#10092;</div>
+		<div id="events">
+			<div id="claimbutton" class="button" onclick="claim();">Claim VK 6 de komende 34 minuten</div>
+		</div>
+	</div>
 </body>
 </html>
