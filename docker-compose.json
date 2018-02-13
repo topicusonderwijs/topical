@@ -3,6 +3,27 @@
   "services": {
     "backend": {
       "image": "docker.topicusonderwijs.nl/topical/topical-backend:latest",
+      "secrets": [{
+      	"source": "topical/domain",
+      	"target": "domain"
+      },
+      {
+      	"source": "topical/username",
+      	"target": "username"
+      },
+      {
+      	"source": "topical/password",
+      	"target": "password"
+      },
+      {
+      	"source": "topical/url",
+      	"target": "url"
+      },
+      {
+      	"source": "topical/rooms",
+      	"target": "rooms"
+      }                     
+      ],      
       "labels": {
         "traefik.domain": "topicusonderwijs.ops",
         "traefik.alias.fqdn": "topical-backend.topicusonderwijs.nl",
@@ -23,5 +44,22 @@
         "io.rancher.container.pull_image": "always"
       }
     }
+  },
+  "secrets": {
+  	"topical/domain": {
+  		"external": "true"
+  	},
+  	"topical/username": {
+  		"external": "true"
+  	},
+  	"topical/password": {
+  		"external": "true"
+  	},
+  	"topical/url": {
+  		"external": "true"
+  	},
+  	"topical/rooms": {
+  		"external": "true"
+  	}
   }
 }
