@@ -33,7 +33,7 @@
         "io.rancher.container.pull_image": "always"
       }
 	},      
-    "frondend": {
+    "frontend": {
       "image": "docker.topicusonderwijs.nl/topical/topical-frontend:latest",
       "labels": {
         "traefik.domain": "topicusonderwijs.ops",
