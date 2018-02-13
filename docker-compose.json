@@ -1,0 +1,27 @@
+{
+  "version": "2",
+  "services": {
+    "backend": {
+      "image": "docker.topicusonderwijs.nl/topical/topical-backend:latest",
+      "labels": {
+        "traefik.domain": "topicusonderwijs.ops",
+        "traefik.alias.fqdn": "topical-backend.topicusonderwijs.nl",
+        "traefik.port": "4567",
+        "traefik.enable": "stack",
+        "io.rancher.container.hostname_override": "container_name",
+        "io.rancher.container.pull_image": "always"
+      }
+	},      
+    "frondend": {
+      "image": "docker.topicusonderwijs.nl/topical/topical-frontend:latest",
+      "labels": {
+        "traefik.domain": "topicusonderwijs.ops",
+        "traefik.alias.fqdn": "topical.topicusonderwijs.nl",
+        "traefik.port": "80",
+        "traefik.enable": "stack",
+        "io.rancher.container.hostname_override": "container_name",
+        "io.rancher.container.pull_image": "always"
+      }
+    }
+  }
+}

@@ -1,29 +1,30 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 	<parent>
-    <groupId>nl.topicus.onderwijs.topical</groupId>
-    <artifactId>topical-parent</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+		<groupId>nl.topicus.onderwijs.topical</groupId>
+		<artifactId>topical-parent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
-  <artifactId>topical-backend</artifactId>
-  <dependencies>
-    <dependency>
-      <groupId>com.sparkjava</groupId>
-      <artifactId>spark-core</artifactId>
-      <version>2.5.5</version>
-    </dependency>
-    <dependency>
-	  <groupId>com.microsoft.ews-java-api</groupId>
-	  <artifactId>ews-java-api</artifactId>
-	  <version>2.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>2.8.0</version>
-    </dependency>
-  </dependencies>
+	<artifactId>topical-backend</artifactId>
+	<dependencies>
+		<dependency>
+			<groupId>com.sparkjava</groupId>
+			<artifactId>spark-core</artifactId>
+			<version>2.5.5</version>
+		</dependency>
+		<dependency>
+			<groupId>com.microsoft.ews-java-api</groupId>
+			<artifactId>ews-java-api</artifactId>
+			<version>2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.8.0</version>
+		</dependency>
+	</dependencies>
 	<build>
 		<pluginManagement>
 			<plugins>
@@ -35,12 +36,12 @@
 							<image>
 								<name>docker.topicusonderwijs.nl/topical/topical-backend</name>
 								<build>
-                  <from>openjdk:8-jre-alpine</from>
-                  <ports>
-                    <port>4567</port>
-                  </ports>
-                  <!-- Default command for the build image -->
-                  <cmd>java -Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom -jar /maven/topical-backend.jar</cmd>
+									<from>openjdk:8-jre-alpine</from>
+									<ports>
+										<port>4567</port>
+									</ports>
+									<!-- Default command for the build image -->
+									<cmd>java -Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom -jar /maven/topical-backend.jar</cmd>
 									<tags>
 										<tag>${project.version}</tag>
 									</tags>
@@ -52,11 +53,11 @@
 											<id>topical-backend</id>
 											<dependencySets>
 												<dependencySet>
-                          <useProjectArtifact>true</useProjectArtifact>
+													<useProjectArtifact>true</useProjectArtifact>
 													<includes>
 														<include>nl.topicus.onderwijs.topical:topical-backend</include>
 													</includes>
-                          <outputDirectory>.</outputDirectory>
+													<outputDirectory>.</outputDirectory>
 													<outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
 												</dependencySet>
 											</dependencySets>
@@ -66,38 +67,48 @@
 							</image>
 						</images>
 					</configuration>
+					<executions>
+						<execution>
+							<id>docker-build</id>
+							<phase>package</phase>
+							<goals>
+								<goal>build</goal>
+							</goals>
+						</execution>
+					</executions>
 				</plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <version>3.0.0</version>
-          <executions>
-            <execution>
-              <phase>package</phase>
-              <goals>
-                <goal>shade</goal>
-              </goals>
-              <configuration>
-                <minimizeJar>true</minimizeJar>
-                <transformers>
-                  <trandformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                    <mainClass>nl.topicus.topical.TopicalBackend</mainClass>
-                  </trandformer>
-                </transformers>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-shade-plugin</artifactId>
+					<version>3.0.0</version>
+					<executions>
+						<execution>
+							<phase>package</phase>
+							<goals>
+								<goal>shade</goal>
+							</goals>
+							<configuration>
+								<minimizeJar>true</minimizeJar>
+								<transformers>
+									<trandformer
+										implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+										<mainClass>nl.topicus.topical.TopicalBackend</mainClass>
+									</trandformer>
+								</transformers>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+			</plugin>
+			<plugin>
 				<groupId>io.fabric8</groupId>
 				<artifactId>docker-maven-plugin</artifactId>
-			</plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>
