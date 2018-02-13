@@ -26,7 +26,7 @@
       ],      
       "labels": {
         "traefik.domain": "topicusonderwijs.ops",
-        "traefik.frontend.rule": "Host:topical-backend.{domain}",
+        "traefik.frontend.rule": "Host:topical-backend.topicusonderwijs.ops",
         "traefik.alias.fqdn": "topical-backend.topicusonderwijs.nl",
         "traefik.port": "4567",
         "traefik.enable": "stack",
@@ -38,7 +38,7 @@
       "image": "docker.topicusonderwijs.nl/topical/topical-frontend:latest",
       "labels": {
         "traefik.domain": "topicusonderwijs.ops",
-        "traefik.frontend.rule": "Host:topical-frontend.{domain}",
+        "traefik.frontend.rule": "Host:topical-frontend.topicusonderwijs.ops",
         "traefik.alias.fqdn": "topical.topicusonderwijs.nl",
         "traefik.port": "80",
         "traefik.enable": "stack",
