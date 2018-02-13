@@ -4,9 +4,11 @@ node() {
 	catchError {
 		git.checkout { }
 	
-		maven { }
-		
 		if (env.BRANCH_NAME == 'master') {
+			maven {
+				goals = "deploy"
+			}
+			
 			stage('Deploy') {
 				def workspace = pwd()
 				def dockerComposeFile = readFile "${workspace}/docker-compose.json"
@@ -23,6 +25,9 @@ node() {
 					externalId = "topical-latest"
 				}
 			}
+		}
+		else {
+			maven { }
 		}
 	}
 	
