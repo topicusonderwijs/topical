@@ -27,7 +27,7 @@
       "labels": {
         "traefik.domain": "topicusonderwijs.ops",
         "traefik.path.prefix.strip": "/backend",
-        "traefik.alias.fqdn": "topical.topicusonderwijs.nl",
+        "traefik.alias.fqdn": "topical-backend.topicusonderwijs.nl",
         "traefik.port": "4567",
         "traefik.enable": "stack",
         "io.rancher.container.hostname_override": "container_name",
