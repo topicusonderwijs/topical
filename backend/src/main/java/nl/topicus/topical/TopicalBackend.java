@@ -6,12 +6,10 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import com.google.gson.*;
 
 import microsoft.exchange.webservices.data.core.ExchangeService;
 import microsoft.exchange.webservices.data.core.enumeration.availability.AvailabilityData;
@@ -20,20 +18,12 @@ import microsoft.exchange.webservices.data.core.enumeration.property.LegacyFreeB
 import microsoft.exchange.webservices.data.core.response.AttendeeAvailability;
 import microsoft.exchange.webservices.data.core.response.ServiceResponseCollection;
 import microsoft.exchange.webservices.data.core.service.item.Appointment;
-import microsoft.exchange.webservices.data.credential.ExchangeCredentials;
 import microsoft.exchange.webservices.data.credential.WebCredentials;
 import microsoft.exchange.webservices.data.misc.availability.AttendeeInfo;
 import microsoft.exchange.webservices.data.misc.availability.GetUserAvailabilityResults;
 import microsoft.exchange.webservices.data.misc.availability.TimeWindow;
 import microsoft.exchange.webservices.data.property.complex.MessageBody;
 import spark.Spark;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 
 public class TopicalBackend {
 
@@ -42,6 +32,8 @@ public class TopicalBackend {
 	private String password;
 	private String url;
 	public List<String> rooms;
+	
+	private ExchangeService service;
 
 	public static void main(String[] args) {
 		if (args.length < 5) {
@@ -97,7 +89,9 @@ public class TopicalBackend {
 		});
 	}
 
-	private List<SimpleEvent> listEventsToday(String adres) {
+	// Exchange-server vind het niet fijn om meerdere requests tegelijk te ontvangen. Levert een 
+	// "The remote server returned an error: (401)Unauthorized" op - daarom deze methode synchronized gemaakt.
+	private synchronized List<SimpleEvent> listEventsToday(String adres) {
 		AttendeeInfo attendee = AttendeeInfo.getAttendeeInfoFromString(adres);
 		List<AttendeeInfo> attendees = Arrays.asList(attendee);
 
@@ -110,7 +104,7 @@ public class TopicalBackend {
 		TimeWindow timeWindow = new TimeWindow(today.getTime(),
 				tomorrow.getTime());
 		try {
-			ExchangeService service = createService();
+			ExchangeService service = getService();
 			GetUserAvailabilityResults userAvailability = service
 					.getUserAvailability(attendees, timeWindow,
 							AvailabilityData.FreeBusy);
@@ -151,7 +145,7 @@ public class TopicalBackend {
 							+ currentEvent.getSubject());
 		}
 
-		Appointment appointment = new Appointment(createService());
+		Appointment appointment = new Appointment(getService());
 		appointment.setSubject("Vergaderruimte geclaimed via Topical");
 		appointment
 				.setBody(MessageBody
@@ -194,17 +188,16 @@ public class TopicalBackend {
 		return upcomingEvents.size() > 0 ? upcomingEvents.get(0) : null;
 	}
 
-	private ExchangeService createService() {
-		ExchangeService service = new ExchangeService(
-				ExchangeVersion.Exchange2010_SP2);
-
-		ExchangeCredentials credentials = new WebCredentials(username,
-				password, domain);
-		service.setCredentials(credentials);
-		try {
-			service.setUrl(new URI(url));
-		} catch (URISyntaxException e) {
-			e.printStackTrace();
+	private ExchangeService getService() {
+		if(service == null)
+		{
+			try {
+				service = new ExchangeService(ExchangeVersion.Exchange2010_SP2);
+				service.setCredentials(new WebCredentials(username, password, domain));
+				service.setUrl(new URI(url));
+			} catch (URISyntaxException e) {
+				e.printStackTrace();
+			}
 		}
 		return service;
 	}
