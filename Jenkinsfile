@@ -22,7 +22,8 @@ node() {
 				checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'LocalBranch', localBranch: 'master'], [$class: 'RelativeTargetDirectory', relativeTargetDir: 'infra']], submoduleCfg: [], userRemoteConfigs: [[url: 'git@github.com:topicus-education-ops/k8s_onderwijs-intern_operations_applications.git', credentialsId: 'github_topicusonderwijs-buildbot_key']]])
 					
 				dir('infra/topical') {
-					def reqs = readYaml file: 'requirements.yaml', text: "dependencies[0].version: '$buildTag'"
+					def reqs = readYaml file: 'requirements.yaml'
+					reqs.dependencies[0].version = "${buildTag}"
 					sh "rm requirements.yaml"
 					writeYaml file: 'requirements.yaml', data: reqs
 					git.commitAndPush("master", ['requirements.yaml'], "Deploy Topical ${buildTag} for build ${buildNumber}")
