@@ -64,7 +64,7 @@ spec:
     {{- end }}
       volumes:
         - name: topical-config
-          configmap:
+          configMap:
             name: topical-cm
         - name: topical-secrets
           secret:
