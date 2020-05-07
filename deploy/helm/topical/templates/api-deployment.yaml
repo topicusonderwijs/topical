@@ -66,7 +66,18 @@ spec:
         - name: topical-config
           configMap:
             name: topical-cm
+            items:
+              - key: domain
+                path: domain            
+              - key: rooms
+                path: rooms            
         - name: topical-secrets
           secret:
             secretName: topical-secret
-
+            items:
+              - key: username
+                path: username           
+              - key: password
+                path: password
+              - key: url
+                path: url
