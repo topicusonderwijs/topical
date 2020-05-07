@@ -47,7 +47,7 @@ spec:
             {{- toYaml .Values.api.resources | nindent 12 }}
           volumeMounts:
             - name: topical-config
-              mountPath: /var/run/secrets
+              mountPath: /etc/config
             - name: topical-secrets
               mountPath: /var/run/secrets
       {{- with .Values.api.nodeSelector }}
@@ -66,18 +66,6 @@ spec:
         - name: topical-config
           configMap:
             name: topical-cm
-            items:
-              - key: domain
-                path: domain            
-              - key: rooms
-                path: rooms            
         - name: topical-secrets
           secret:
             secretName: topical-secret
-            items:
-              - key: username
-                path: username           
-              - key: password
-                path: password
-              - key: url
-                path: url
