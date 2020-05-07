@@ -1,34 +1,20 @@
-config { }
+import nl.topicus.MavenCommands
+
+config {
+	concurrentBuilds = false
+}
 
 node() {
 	catchError {
 		git.checkout { }
 	
-		if (env.BRANCH_NAME == 'master') {
-			maven {
-				goals = "deploy"
-			}
-			
-			//stage('Deploy') {
-				//def workspace = pwd()
-				//def dockerComposeFile = readFile "${workspace}/docker-compose.json"
-				//def rancherComposeFile = readFile "${workspace}/rancher-compose.json"
-				
-				// No more Rancher (1)
-				//rancher {
-				//	credentialsID = "rancher-operations-api-key"
-				//	dockerCompose = dockerComposeFile
-				//	rancherCompose = rancherComposeFile
-				//	environmentId = "1a57"
-				//	stackGroup = "topicus"
-				//	stackName = "topical"
-				//	stackDescription = "Vergaderkameroverzicht Singel 9"
-				//	externalId = "topical-latest"
-				//}
-			//}
-		}
-		else {
-			maven { }
+		def mvn = new nl.topicus.MavenCommands()
+		def buildNumber = env.BUILD_NUMBER
+		def buildTag = mvn.getProjectVersion().replace("SNAPSHOT", buildNumber)
+		def goal = env.BRANCH_NAME == 'master' ? "deploy" : "package"
+		maven {
+			goals = goal
+			options = "-Ddocker.tag=${buildTag} -Dhelm.chartVersion=${buildTag}"
 		}
 	}
 	

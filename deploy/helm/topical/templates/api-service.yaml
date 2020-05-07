@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "topical.fullname" . }}-api
+  labels:
+{{ include "topical.labels" . | indent 4 }}
+spec:
+  type: {{ .Values.api.service.type }}
+  ports:
+    - port: {{ .Values.api.service.port }}
+      targetPort: 4567
+      protocol: TCP
+      name: backend-http
+  selector:
+    app.kubernetes.io/name: {{ include "topical.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: api

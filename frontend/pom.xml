@@ -1,57 +1,39 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	
+
 	<parent>
 		<groupId>nl.topicus.onderwijs.topical</groupId>
 		<artifactId>topical-parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
-	
+
 	<artifactId>topical-frontend</artifactId>
 	<packaging>docker</packaging>
-	
+
 	<properties>
 		<docker.skip.run>true</docker.skip.run>
 	</properties>
-	
+
 	<build>
 		<pluginManagement>
 			<plugins>
-				<plugin> <!-- docker-maven-plugin -->
+				<plugin>
 					<groupId>io.fabric8</groupId>
 					<artifactId>docker-maven-plugin</artifactId>
 					<configuration>
 						<images>
 							<image>
-								<name>docker.topicusonderwijs.nl/topical/topical-frontend</name>
+								<name>topicuseducation/topical/topical-ui</name>
 								<build>
-									<from>alpine:3.5</from>
-									<ports>
-										<port>80</port>
-									</ports>
-									<!-- Default command for the build image -->
-									<cmd>httpd -f -h /var/www/html</cmd>
+									<contextDir>${project.basedir}</contextDir>
+									<dockerFile>Dockerfile</dockerFile>
 									<tags>
-										<tag>${project.version}</tag>
+										<tag>latest</tag>
+										<tag>${docker.tag}</tag>
 									</tags>
-									<assembly>
-										<mode>dir</mode>
-										<targetDir>/var/www/html</targetDir>
-										<inline xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-											xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3"
-											xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3 http://maven.apache.org/xsd/assembly-1.1.3.xsd">
-											<id>topical-frontend</id>
-											<fileSets>
-												<fileSet>
-													<includes>
-														<include>*.html</include>
-													</includes>
-												</fileSet>
-											</fileSets>
-										</inline>
-									</assembly>
 								</build>
 							</image>
 						</images>
@@ -67,16 +49,26 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<skipMain>true</skipMain>
-				</configuration>
+				<executions>
+					<execution>
+						<id>default-compile</id>
+						<phase></phase>
+					</execution>
+					<execution>
+						<id>default-testCompile</id>
+						<phase></phase>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<configuration>
-					<skipIfEmpty>true</skipIfEmpty>
-				</configuration>
+				<executions>
+					<execution>
+						<id>default-jar</id>
+						<phase></phase>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

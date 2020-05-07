@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: topical-cm
+data:
+  domain: {{.Values.activeDirectoryDomain}}
+  rooms: {{.Values.rooms}}
