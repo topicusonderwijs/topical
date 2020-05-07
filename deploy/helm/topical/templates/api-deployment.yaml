@@ -48,10 +48,8 @@ spec:
           volumeMounts:
             - name: topical-config
               mountPath: /var/run/secrets
-              read_only: true
             - name: topical-secrets
               mountPath: /var/run/secrets
-              read_only: true              
       {{- with .Values.api.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
