@@ -47,7 +47,7 @@
 					<configuration>
 						<uploadRepoStable>
 							<name>topicus-repo</name>
-							<url>https://repo.topicusonderwijs.nl/artifactory/helm-local</url>
+							<url>https://helm.hub.topicus.education/charts-topicus/topical</url>
 							<type>ARTIFACTORY</type>
 						</uploadRepoStable>
 					</configuration>
