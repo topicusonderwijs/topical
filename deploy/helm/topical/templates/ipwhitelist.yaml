@@ -1,0 +1,14 @@
+{{- if .Values.ipWhiteList -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "topical.fullname" . }}-ipwhitelist
+  labels:
+    {{- include "topical.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.ipWhiteList }}
+  ipWhiteList:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+

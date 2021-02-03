@@ -11,10 +11,8 @@ metadata:
   name: {{ $fullName }}-ui
   labels:
 {{ include "topical.labels" . | indent 4 }}
-  {{- with .Values.ui.ingress.annotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- "topical.annotations" . | nindent 4 }}
 spec:
 {{- if .Values.ui.ingress.tls }}
   tls:

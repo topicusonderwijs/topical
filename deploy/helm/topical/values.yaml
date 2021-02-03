@@ -122,6 +122,19 @@ ui:
       #   hosts:
       #     - 
 
+ipWhiteList: {}
+ ### This is a Treafik2 specific setting
+ ### see: https://doc.traefik.io/traefik/middlewares/ipwhitelist/
+ ### When set it gets automatically appended to the middleware annotation
+ ### using a helper function
+ # sourceRange:
+ #   - 10.0.0.1/32
+ #   - 10.0.0.2/32
+ # ipStrategy:
+ #   depth: 2
+ #   excludedIPs:
+ #     - 127.0.0.1/32
+
 serviceAccount:
   # Specifies whether a service account should be created
   create: true

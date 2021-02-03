@@ -54,3 +54,18 @@ Create the name of the service account to use
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Annotations updated with "traefik.ingress.kubernetes.io/router.middlewares"
+if needed.
+*/}}
+{{- define "topical.annotations" -}}
+{{- $annotations := .Values.ingress.annotations }}
+{{- if .Values.ipWhiteList }}
+{{- $additionalMiddleware := printf "%s-%s-ipwhitelist@kubernetescrd" .Release.Namespace (include "topical.fullname" .)  }}
+{{- $userSuppliedMiddlewares := index $annotations "traefik.ingress.kubernetes.io/router.middlewares" | default "" }}
+{{- $_ := set $annotations "traefik.ingress.kubernetes.io/router.middlewares" (trimAll "," (printf "%s,%s" $userSuppliedMiddlewares $additionalMiddleware)) -}}
+{{ toYaml $annotations }}
+{{- end }}
+{{- end }}
+

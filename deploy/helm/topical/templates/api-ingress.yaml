@@ -11,10 +11,8 @@ metadata:
   name: {{ $fullName }}-api
   labels:
 {{ include "topical.labels" . | indent 4 }}
-  {{- with .Values.api.ingress.annotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- "topical.annotations" . | nindent 4 }}
 spec:
 {{- if .Values.api.ingress.tls }}
   tls:
