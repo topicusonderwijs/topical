@@ -3,6 +3,13 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
+	<parent>
+		<groupId>nl.topicus.onderwijs.parent</groupId>
+		<artifactId>onderwijs-parent-base</artifactId>
+		<version>2021.4.1</version>
+		<relativePath/>
+	</parent>
+
 	<groupId>nl.topicus.onderwijs.topical</groupId>
 	<artifactId>topical-parent</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
@@ -31,7 +38,6 @@
 				<plugin>
 					<groupId>io.fabric8</groupId>
 					<artifactId>docker-maven-plugin</artifactId>
-					<version>0.33.0</version>
 					<extensions>true</extensions>
 					<configuration>
 						<logDate>default</logDate>
@@ -42,7 +48,6 @@
 				<plugin>
 					<groupId>com.kiwigrid</groupId>
 					<artifactId>helm-maven-plugin</artifactId>
-					<version>3.4</version>
 					<extensions>true</extensions>
 					<configuration>
 						<uploadRepoStable>
