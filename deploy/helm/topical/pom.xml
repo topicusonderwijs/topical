@@ -16,7 +16,6 @@
 	<properties>
 		<maven.install.skip>true</maven.install.skip>
 		<helm.chartVersion>${project.version}</helm.chartVersion>
-		<helm.downloadUrl>https://repo.topicusonderwijs.nl/artifactory/helm-releases/helm-v2.14.3-linux-amd64.tar.gz</helm.downloadUrl>
 	</properties>
 
 	<dependencies>
