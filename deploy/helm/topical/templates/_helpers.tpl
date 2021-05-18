@@ -59,8 +59,8 @@ Create the name of the service account to use
 Annotations updated with "traefik.ingress.kubernetes.io/router.middlewares"
 if needed.
 */}}
-{{- define "topical.annotations" -}}
-{{- $annotations := .Values.ingress.annotations }}
+{{- define "topical.annotations.api" -}}
+{{- $annotations := .Values.api.ingress.annotations }}
 {{- if .Values.ipWhiteList }}
 {{- $additionalMiddleware := printf "%s-%s-ipwhitelist@kubernetescrd" .Release.Namespace (include "topical.fullname" .)  }}
 {{- $userSuppliedMiddlewares := index $annotations "traefik.ingress.kubernetes.io/router.middlewares" | default "" }}
@@ -69,3 +69,12 @@ if needed.
 {{- end }}
 {{- end }}
 
+{{- define "topical.annotations.ui" -}}
+{{- $annotations := .Values.ui.ingress.annotations }}
+{{- if .Values.ipWhiteList }}
+{{- $additionalMiddleware := printf "%s-%s-ipwhitelist@kubernetescrd" .Release.Namespace (include "topical.fullname" .)  }}
+{{- $userSuppliedMiddlewares := index $annotations "traefik.ingress.kubernetes.io/router.middlewares" | default "" }}
+{{- $_ := set $annotations "traefik.ingress.kubernetes.io/router.middlewares" (trimAll "," (printf "%s,%s" $userSuppliedMiddlewares $additionalMiddleware)) -}}
+{{ toYaml $annotations }}
+{{- end }}
+{{- end }}
