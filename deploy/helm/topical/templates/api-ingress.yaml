@@ -12,7 +12,7 @@ metadata:
   labels:
 {{ include "topical.labels" . | indent 4 }}
   annotations:
-    {{- "topical.annotations" . | nindent 4 }}
+    {{- include "topical.annotations.api" . | nindent 4 }}
 spec:
 {{- if .Values.api.ingress.tls }}
   tls:
