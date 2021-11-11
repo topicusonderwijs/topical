@@ -31,9 +31,8 @@ spec:
             backend:
               service:
                 name: {{ $fullName }}-ui
-                service:
-                  port:
-                     number: {{ $svcPort }}
+                port:
+                   number: {{ $svcPort }}
         {{- end }}
   {{- end }}
 {{- end }}
