@@ -32,7 +32,8 @@ spec:
               service:
                 name: {{ $fullName }}-ui
                 service:
-                  port: {{ $svcPort }}
+                  port:
+                     number: {{ $svcPort }}
         {{- end }}
   {{- end }}
 {{- end }}
