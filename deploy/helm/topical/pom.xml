@@ -16,7 +16,7 @@
 	<properties>
 		<maven.install.skip>true</maven.install.skip>
 		
-		<helm.uploadDirectory>parnassys</helm.uploadDirectory>
+		<helm.uploadDirectory>topical</helm.uploadDirectory>
 		<helm.chartVersion>${project.version}</helm.chartVersion>
 	</properties>
 
@@ -37,6 +37,9 @@
 					<configuration>
 						<chartDirectory>${project.basedir}</chartDirectory>
 						<appVersion>${project.version}</appVersion>
+                                                <values>
+                                                        <yamlFile>${project.basedir}/ci.yaml</yamlFile>
+                                                </values>
 					</configuration>
 				</plugin>
 			</plugins>

@@ -65,8 +65,8 @@ if needed.
 {{- $additionalMiddleware := printf "%s-%s-ipwhitelist@kubernetescrd" .Release.Namespace (include "topical.fullname" .)  }}
 {{- $userSuppliedMiddlewares := index $annotations "traefik.ingress.kubernetes.io/router.middlewares" | default "" }}
 {{- $_ := set $annotations "traefik.ingress.kubernetes.io/router.middlewares" (trimAll "," (printf "%s,%s" $userSuppliedMiddlewares $additionalMiddleware)) -}}
-{{ toYaml $annotations }}
 {{- end }}
+{{ toYaml $annotations }}
 {{- end }}
 
 {{- define "topical.annotations.ui" -}}
@@ -75,6 +75,6 @@ if needed.
 {{- $additionalMiddleware := printf "%s-%s-ipwhitelist@kubernetescrd" .Release.Namespace (include "topical.fullname" .)  }}
 {{- $userSuppliedMiddlewares := index $annotations "traefik.ingress.kubernetes.io/router.middlewares" | default "" }}
 {{- $_ := set $annotations "traefik.ingress.kubernetes.io/router.middlewares" (trimAll "," (printf "%s,%s" $userSuppliedMiddlewares $additionalMiddleware)) -}}
-{{ toYaml $annotations }}
 {{- end }}
+{{ toYaml $annotations }}
 {{- end }}

@@ -1,0 +1,153 @@
+# Default values for topical.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+api:
+  replicaCount: 1
+
+  image:
+    repository: docker.topicusonderwijs.nl/topicuseducation/topical/topical-api
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  resources: {}
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  ingress:
+    enabled: true
+
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubernetes.io/ingress.class: traefik
+
+    hosts:
+      - host: topical.example.org
+        paths:
+          - /
+
+    tls: []
+      # - secretName:
+      #   hosts:
+      #     - 
+
+ui:
+  replicaCount: 1
+
+  image:
+    repository: docker.topicusonderwijs.nl/topicuseducation/topical/topical-ui
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  resources: {}
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  service:
+    type: ClusterIP
+    port: 4567
+
+  ingress:
+    enabled: true
+    
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubernetes.io/ingress.class: traefik
+
+    hosts:
+      - host: ui.api.topical.example.org
+        paths:
+          - /
+
+    tls: []
+      # - secretName:
+      #   hosts:
+      #     - 
+
+ipWhiteList: {}
+ ### This is a Treafik2 specific setting
+ ### see: https://doc.traefik.io/traefik/middlewares/ipwhitelist/
+ ### When set it gets automatically appended to the middleware annotation
+ ### using a helper function
+ #sourceRange:
+ #  - 10.0.0.1/32
+ #  - 10.0.0.2/32
+ # ipStrategy:
+ #   depth: 2
+ #   excludedIPs:
+ #     - 127.0.0.1/32
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
+activeDirectoryDomain: 
+rooms: 
+
+keyhubVaultRecords:
+  activeDirectoryCredentials: 

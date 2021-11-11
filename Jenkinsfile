@@ -14,7 +14,7 @@ node() {
 		def goal = env.BRANCH_NAME == 'master' ? "deploy" : "package"
 		maven {
 			goals = goal
-			options = "-Ddocker.tag=${buildTag} -Dhelm.chartVersion=${buildTag}"
+			options = "-Ddocker.tag=${buildTag} -Dhelm.chartVersion=${buildTag} -Dhelm.lint.strict=true"
 		}
 		
 		stage("Deploy") {
